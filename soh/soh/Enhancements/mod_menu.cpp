@@ -5,6 +5,7 @@
 #include <ship/utils/StringHelper.h>
 
 #include "mod_menu.h"
+#include "soh/NativeOptions/NativeOptions.h"
 #include "soh/OTRGlobals.h"
 #include "soh/resource/type/Skeleton.h"
 #include "soh/SohGui/MenuTypes.h"
@@ -15,8 +16,6 @@ std::vector<std::string> enabledModFiles;
 std::vector<std::string> disabledModFiles;
 std::vector<std::string> unsupportedFiles;
 std::map<std::string, std::filesystem::path> filePaths;
-static int dragSourceIndex = -1;
-static int dragTargetIndex = -1;
 
 namespace SohGui {
 extern std::shared_ptr<SohMenu> mSohMenu;
@@ -57,51 +56,11 @@ void SetEnabledModsCVarValue() {
     Ship::Context::GetInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
 }
 
-void AfterModChange() {
-    // disabled mods are always sorted
-    std::sort(disabledModFiles.begin(), disabledModFiles.end(), [](const std::string& a, const std::string& b) {
-        return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end(),
-                                            [](char c1, char c2) { return std::tolower(c1) < std::tolower(c2); });
-    });
-}
-
-void ModsPostDragAndDrop() {
-    if (dragTargetIndex != -1) {
-        std::string file = enabledModFiles[dragSourceIndex];
-        enabledModFiles.erase(enabledModFiles.begin() + dragSourceIndex);
-        enabledModFiles.insert(enabledModFiles.begin() + dragTargetIndex, file);
-        dragTargetIndex = dragSourceIndex = -1;
-        AfterModChange();
-    }
-}
-
-void ModsHandleDragAndDrop(std::vector<std::string>& objectList, int targetIndex, const std::string& itemName,
-                           ImGuiDragDropFlags flags = ImGuiDragDropFlags_SourceAllowNullID) {
-    if (ImGui::BeginDragDropSource(flags)) {
-        ImGui::SetDragDropPayload("DragMove", &targetIndex, sizeof(uint32_t));
-        ImGui::Text("Move %s", itemName.c_str());
-        ImGui::EndDragDropSource();
-    }
-
-    if (ImGui::BeginDragDropTarget()) {
-        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DragMove")) {
-            IM_ASSERT(payload->DataSize == sizeof(uint32_t));
-            dragSourceIndex = *(const int*)payload->Data;
-            dragTargetIndex = targetIndex;
-        }
-        ImGui::EndDragDropTarget();
-    }
-}
-
 std::vector<std::string> GetEnabledModsFromCVar() {
     std::string enabledModsCVarValue = CVAR_ENABLED_MODS_VALUE;
     if (enabledModsCVarValue.empty())
         return {};
     return StringHelper::Split(enabledModsCVarValue, SEPARATOR);
-}
-
-std::vector<std::string>& GetModFiles(bool enabled) {
-    return enabled ? enabledModFiles : disabledModFiles;
 }
 
 std::shared_ptr<Ship::ArchiveManager> GetArchiveManager() {
@@ -179,201 +138,73 @@ void UpdateModFiles(bool init = false, bool reset = false) {
     }
 }
 
-extern "C" void gfx_texture_cache_clear();
 
-void EnableMod(std::string file) {
-    disabledModFiles.erase(std::find(disabledModFiles.begin(), disabledModFiles.end(), file));
-    enabledModFiles.insert(enabledModFiles.begin(), file);
-
-    // TODO: runtime changes
-    // GetArchiveManager()->AddArchive(file);
-    AfterModChange();
-}
-
-void DisableMod(std::string file) {
-    enabledModFiles.erase(std::find(enabledModFiles.begin(), enabledModFiles.end(), file));
-    disabledModFiles.insert(disabledModFiles.begin(), file);
-
-    // TODO: runtime changes
-    // GetArchiveManager()->RemoveArchive(file);
-    AfterModChange();
-}
-
-void DrawModInfo(std::string file) {
-    ImGui::SameLine();
-    ImGui::Text("%s", file.c_str());
-}
-
-void DrawMods(bool enabled) {
-    std::vector<std::string>& selectedModFiles = GetModFiles(enabled);
-    if (selectedModFiles.empty()) {
-        return;
-    }
-
-    bool madeAnyChange = false;
-    int switchFromIndex = -1;
-    int switchToIndex = -1;
-    uint32_t index = 0;
-
-    for (size_t i = selectedModFiles.size() - 1; i != SIZE_MAX; i--) {
-        std::string file = selectedModFiles[i];
-        if (enabled) {
-            ImGui::BeginGroup();
-        }
-        // if (UIWidgets::StateButton((file + "_left_right").c_str(), enabled ? ICON_FA_ARROW_RIGHT :
-        // ICON_FA_ARROW_LEFT,
-        //                            ImVec2(25, 25), UIWidgets::ButtonOptions().Color(THEME_COLOR))) {
-        //     if (enabled) {
-        //         DisableMod(file);
-        //     } else {
-        //         EnableMod(file);
-        //     }
-        // }
-
-        // it's not relevant to reorder disabled mods
-        if (enabled) {
-            // ImGui::SameLine();
-            if (i == selectedModFiles.size() - 1) {
-                ImGui::BeginDisabled();
-            }
-            if (UIWidgets::StateButton((file + "_up").c_str(), ICON_FA_ARROW_UP, ImVec2(25, 25),
-                                       UIWidgets::ButtonOptions().Color(THEME_COLOR))) {
-                madeAnyChange = true;
-                switchFromIndex = i;
-                switchToIndex = i + 1;
-            }
-            if (i == selectedModFiles.size() - 1) {
-                ImGui::EndDisabled();
-            }
-
-            ImGui::SameLine();
-            if (i == 0) {
-                ImGui::BeginDisabled();
-            }
-            if (UIWidgets::StateButton((file + "_down").c_str(), ICON_FA_ARROW_DOWN, ImVec2(25, 25),
-                                       UIWidgets::ButtonOptions().Color(THEME_COLOR))) {
-                madeAnyChange = true;
-                switchFromIndex = i;
-                switchToIndex = i - 1;
-            }
-            if (i == 0) {
-                ImGui::EndDisabled();
-            }
-        }
-
-        DrawModInfo(filePaths.at(file).filename().generic_string());
-        if (enabled) {
-            ImGui::EndGroup();
-            ModsHandleDragAndDrop(selectedModFiles, i, file);
-        }
-    }
-
-    if (enabled) {
-        ModsPostDragAndDrop();
-    }
-
-    if (madeAnyChange) {
-        std::iter_swap(selectedModFiles.begin() + switchFromIndex, selectedModFiles.begin() + switchToIndex);
-        AfterModChange();
-    }
-}
-
+namespace {
+using namespace NativeOptions;
 bool editing = false;
 
-void ModMenuWindow::DrawElement() {
-    SohGui::mSohMenu->MenuDrawItem(enableModsWidget, 200, THEME_COLOR);
-    ImGui::SameLine();
-    SohGui::mSohMenu->MenuDrawItem(tabHotkeyWidget, 200, THEME_COLOR);
-
-    ImGui::TextColored(
-        UIWidgets::ColorValues.at(UIWidgets::Colors::Yellow),
-        "Mods are currently not reloaded at runtime. Close and re-open Ship for the changes to take effect.\n"
-        "Drag ordering for the enabled list is available.\nMod priority is top to bottom. They override mods listed "
-        "below them.");
-
-    // if (UIWidgets::Button(
-    //         "Update", UIWidgets::ButtonOptions({ { .disabled = editing, .disabledTooltip = "Currently editing..." }
-    //         })
-    //                       .Size(UIWidgets::Sizes::Inline)
-    //                       .Color(THEME_COLOR))) {
-    //     UpdateModFiles();
-    // }
-    // ImGui::SameLine();
-    if (UIWidgets::Button("Edit",
-                          UIWidgets::ButtonOptions({ { .disabled = editing, .disabledTooltip = "Already editing..." } })
-                              .Size(UIWidgets::Sizes::Inline)
-                              .Color(THEME_COLOR))) {
-        editing = true;
-    }
-    if (editing) {
-        ImGui::SameLine();
-        if (UIWidgets::Button("Cancel", UIWidgets::ButtonOptions().Size(UIWidgets::Sizes::Inline))) {
-            editing = false;
-            UpdateModFiles(false, true);
+PagePtr EditMods() {
+    auto order = std::make_shared<std::vector<std::string>>(enabledModFiles);
+    editing = true;
+    auto page = MakePage("mods/order", NativeOptions::Text("enabled_mods"), [order] {
+        std::vector<Row> rows;
+        for (size_t reverse = order->size(); reverse > 0; --reverse) {
+            const auto index = reverse - 1;
+            const auto file = order->at(index);
+            const auto path = filePaths.find(file);
+            const auto name = path == filePaths.end() ? file : path->second.filename().generic_string();
+            rows.push_back(Link(file, name, [order, file, name] {
+                return MakePage("mods/" + file, name, [order, file] {
+                    auto current = std::find(order->begin(), order->end(), file);
+                    if (current == order->end()) return std::vector<Row>{};
+                    const size_t index = static_cast<size_t>(current - order->begin());
+                    auto up = Action("up", NativeOptions::Text("move_up"), [order, index] {
+                        std::swap(order->at(index), order->at(index + 1));
+                    });
+                    auto down = Action("down", NativeOptions::Text("move_down"), [order, index] {
+                        std::swap(order->at(index), order->at(index - 1));
+                    });
+                    up.enabled = index + 1 < order->size();
+                    down.enabled = index > 0;
+                    return std::vector<Row>{std::move(up), std::move(down)};
+                });
+            }));
         }
-        ImGui::SameLine();
-        if (UIWidgets::Button("Clear List", UIWidgets::ButtonOptions().Size(UIWidgets::Sizes::Inline))) {
-            SohGui::RegisterPopup("Clear List",
-                                  "Clear the current mod list and force a rebuild on next boot.\nClick Apply & Close "
-                                  "to save this change.",
-                                  "Clear", "Cancel", [&]() {
-                                      enabledModFiles.clear();
-                                      AfterModChange();
-                                  });
-        }
-        ImGui::SameLine();
-        if (UIWidgets::Button("Apply & Close",
-                              UIWidgets::ButtonOptions().Size(UIWidgets::Sizes::Inline).Color(THEME_COLOR))) {
-            SohGui::RegisterPopup("Apply & Close",
-                                  "Application currently requires a restart. Save the mod info and close SoH?", "Close",
-                                  "Cancel", [&]() {
-                                      // TODO: runtime changes
-                                      SetEnabledModsCVarValue();
-                                      // TODO: runtime changes
-                                      /*
-                                      gfx_texture_cache_clear();
-                                      SOH::SkeletonPatcher::ClearSkeletons();
-                                      */
-                                      Ship::Context::GetInstance()->GetConsoleVariables()->Save();
-                                      Ship::Context::GetInstance()->GetWindow()->Close();
-                                  });
-        }
-    }
-    ImGui::BeginDisabled(!editing);
-    if (ImGui::BeginTable("tableMods", 2, ImGuiTableFlags_BordersH | ImGuiTableFlags_BordersV)) {
-        ImGui::TableSetupColumn("Enabled Mods", ImGuiTableColumnFlags_WidthStretch, 200.0f);
-        // ImGui::TableSetupColumn("Disabled Mods", ImGuiTableColumnFlags_WidthStretch, 200.0f);
-        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-        ImGui::TableHeadersRow();
-        ImGui::PopItemFlag();
-        ImGui::TableNextRow();
-
-        ImGui::TableNextColumn();
-
-        if (ImGui::BeginChild("Enabled Mods", ImVec2(0, -8))) {
-            DrawMods(true);
-
-            ImGui::EndChild();
-        }
-
-        /*ImGui::TableNextColumn();
-
-        if (ImGui::BeginChild("Disabled Mods", ImVec2(0, -8))) {
-            DrawMods(false);
-
-            ImGui::EndChild();
-        }*/
-
-        ImGui::EndTable();
-    }
-    ImGui::EndDisabled();
+        rows.push_back(Action("clear", NativeOptions::Text("clear_list"), [order] {
+            Confirm(NativeOptions::Text("clear_list"), NativeOptions::Text("clear_mods_description"), NativeOptions::Text("clear"), [order] { order->clear(); });
+        }));
+        rows.push_back(Action("apply", NativeOptions::Text("apply_close"), [order] {
+            Confirm(NativeOptions::Text("apply_close"), NativeOptions::Text("apply_mods_description"), NativeOptions::Text("close"), [order] {
+                enabledModFiles = *order;
+                SetEnabledModsCVarValue();
+                Ship::Context::GetInstance()->GetConsoleVariables()->Save();
+                Ship::Context::GetInstance()->GetWindow()->Close();
+            });
+        }));
+        rows.push_back(Action("cancel", NativeOptions::Text("cancel"), [] { GetModel().Back(); }));
+        return rows;
+    }, NativeOptions::Text("mod_priority"));
+    page->onClose = [] { editing = false; };
+    return page;
 }
 
-void ModMenuWindow::InitElement() {
+PagePtr ModMenuPage() {
+    return MakePage("mods", NativeOptions::Text("mod_menu"), [] {
+        std::vector<Row> rows;
+        AppendWidget(rows, enableModsWidget, "mods/enabled");
+        AppendWidget(rows, tabHotkeyWidget, "mods/hotkey");
+        rows.push_back(Link("edit", NativeOptions::Text("edit"), EditMods, NativeOptions::Text("mods_restart")));
+        return rows;
+    });
+}
+} // namespace
+
+void InitializeMods() {
     UpdateModFiles(true);
 }
 
 void RegisterModMenuWidgets() {
+    NativeOptions::RegisterPage("Mod Menu", ModMenuPage);
     enableModsWidget = { .name = "Enable Mods", .type = WidgetType::WIDGET_CVAR_CHECKBOX };
     enableModsWidget.CVar(CVAR_SETTING("AltAssets"))
         .RaceDisable(false)

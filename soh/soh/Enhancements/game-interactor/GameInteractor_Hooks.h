@@ -72,6 +72,10 @@ void GameInteractor_ExecuteOnKaleidoscopeUpdate(int16_t inDungeonScene);
 
 // MARK: - Main Menu
 void GameInteractor_ExecuteOnPresentFileSelect();
+void GameInteractor_ExecuteOnFileSelectUpdate(void* fileChoose);
+void GameInteractor_ExecuteOnFileSelectClose();
+void GameInteractor_ExecuteOnBootLogo(uint8_t logo);
+void GameInteractor_ExecuteOnTitleScreen(bool masterQuest, const char* prompt);
 void GameInteractor_ExecuteOnUpdateFileSelectSelection(uint16_t optionIndex);
 void GameInteractor_ExecuteOnUpdateFileSelectConfirmationSelection(uint16_t optionIndex);
 void GameInteractor_ExecuteOnUpdateFileCopySelection(uint16_t optionIndex);

@@ -32,15 +32,3 @@ class InputViewer final : public Ship::GuiWindow {
   private:
     void RenderButton(std::string btn, std::string btnOutline, int state, ImVec2 size, int outlineMode);
 };
-
-class InputViewerSettingsWindow final : public Ship::GuiWindow {
-  public:
-    using GuiWindow::GuiWindow;
-
-    void InitElement() override{};
-    void DrawElement() override;
-    void UpdateElement() override{};
-
-    InputViewerSettingsWindow();
-    ~InputViewerSettingsWindow();
-};

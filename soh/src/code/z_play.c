@@ -1338,6 +1338,10 @@ void Play_DrawOverlayElements(PlayState* play) {
         KaleidoScopeCall_Draw(play);
     }
 
+    if (play->pauseCtx.optionsTab && play->pauseCtx.state == 6 && play->pauseCtx.debugState == 0) {
+        return;
+    }
+
     if (gSaveContext.gameMode == GAMEMODE_NORMAL) {
         Interface_Draw(play);
     }
@@ -1680,7 +1684,7 @@ Play_Draw_skip:
 
     CLOSE_DISPS(gfxCtx);
 
-    Interface_DrawTotalGameplayTimer(play);
+    if (!play->pauseCtx.optionsTab) Interface_DrawTotalGameplayTimer(play);
 }
 
 time_t Play_GetRealTime() {

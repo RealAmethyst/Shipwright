@@ -314,9 +314,6 @@ class Option {
     size_t key;
 
   private:
-    bool RenderCheckbox();
-    bool RenderCombobox();
-    bool RenderSlider();
     void PopulateTextToNum();
     std::string name;
     std::vector<std::string> options;

@@ -8,6 +8,8 @@
 #include "objects/object_mag/object_mag.h"
 #include <soh/GameVersions.h>
 #include "soh/ResourceManagerHelpers.h"
+#include "soh/Enhancements/game-interactor/GameInteractor_Hooks.h"
+#include "soh/NativeOptions/NativeOptions.h"
 #include <string.h>
 
 #define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
@@ -62,6 +64,10 @@ static s16 sDelayTimer = 0;
 void EnMag_Init(Actor* thisx, PlayState* play) {
     EnMag* this = (EnMag*)thisx;
     bool isMQ = ResourceMgr_IsGameMasterQuest();
+    this->speechFlags = 0;
+    this->optionsSelected = 0;
+    this->menuStickHeld = 0;
+    this->returningFromOptions = 0;
 
     YREG(1) = 63;
     YREG(3) = 80;
@@ -191,6 +197,35 @@ void EnMag_Update(Actor* thisx, PlayState* play) {
             }
         } else if (this->globalState >= MAG_STATE_DISPLAY) {
             if (sDelayTimer == 0) {
+                const u8 language = CVarGetInteger(CVAR_SETTING("TitleScreenTranslation"), 0) &&
+                                            ResourceMgr_IsPalLoaded() && gSaveContext.language != LANGUAGE_JPN
+                                        ? gSaveContext.language : LANGUAGE_ENG;
+                const s32 stickMoved = ABS(play->state.input[0].cur.stick_y) > 40;
+                if (this->returningFromOptions) {
+                    this->returningFromOptions = 0;
+                    NativeOptions_SpeakTitleItem(pressStartMsg[language], this->optionsSelected, false);
+                }
+                if (this->globalState == MAG_STATE_DISPLAY &&
+                    ((stickMoved && !this->menuStickHeld) ||
+                     CHECK_BTN_ANY(play->state.input[0].press.button, BTN_DUP | BTN_DDOWN))) {
+                    this->optionsSelected ^= 1;
+                    NativeOptions_SpeakTitleItem(pressStartMsg[language], this->optionsSelected, false);
+                    Audio_PlaySoundGeneral(NA_SE_SY_FSEL_CURSOR, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale,
+                                           &gSfxDefaultFreqAndVolScale, &gSfxDefaultReverb);
+                }
+                this->menuStickHeld = stickMoved;
+                if (this->globalState == MAG_STATE_DISPLAY && this->optionsSelected &&
+                    CHECK_BTN_ANY(play->state.input[0].press.button, BTN_A | BTN_START)) {
+                    this->returningFromOptions = 1;
+                    NativeOptions_Open();
+                    return;
+                }
+                if (this->globalState == MAG_STATE_DISPLAY && this->optionsSelected &&
+                    CHECK_BTN_ALL(play->state.input[0].press.button, BTN_B)) {
+                    this->optionsSelected = 0;
+                    NativeOptions_SpeakTitleItem(pressStartMsg[language], 0, false);
+                    return;
+                }
                 if (CHECK_BTN_ALL(play->state.input[0].press.button, BTN_START) ||
                     CHECK_BTN_ALL(play->state.input[0].press.button, BTN_A) ||
                     CHECK_BTN_ALL(play->state.input[0].press.button, BTN_B)) {
@@ -445,40 +480,6 @@ bool EnMag_ShouldDrawNoController(Font* font, Gfx** gfxP, bool isActualText) {
     return false;
 }
 
-bool EnMag_ShouldDrawPressStart(Font* font, Gfx** gfxP, bool isActualText) {
-    if (!CVarGetInteger(CVAR_SETTING("TitleScreenTranslation"), 0) || !ResourceMgr_IsPalLoaded()) {
-        return true;
-    }
-    Gfx* gfx = *gfxP;
-    u8 language = (gSaveContext.language == LANGUAGE_JPN) ? LANGUAGE_ENG : gSaveContext.language;
-    s32 length = strlen(pressStartMsg[language]);
-    u16 rectLeft = YREG(7) + ((length - 11) * -3);
-    u16 rectTop = YREG(10) + 171;
-    s32 i;
-
-    if (!isActualText) {
-        rectLeft++;
-        rectTop++;
-    }
-
-    if (sFontType != FONT_TYPE_PAL) {
-        Font_LoadOrderedFont(font);
-        sFontType = FONT_TYPE_PAL;
-    }
-
-    for (i = 0; i < length; i++) {
-        EnMag_DrawCharTexture(&gfx, font->fontBuf + (pressStartMsg[language][i] - '\x37') * FONT_CHAR_TEX_SIZE,
-                              rectLeft, rectTop);
-        if (pressStartMsg[language][i] == ' ') {
-            rectLeft += YREG(9);
-        } else {
-            rectLeft += YREG(8);
-        }
-    }
-
-    *gfxP = gfx;
-    return false;
-}
 // #endregion
 
 // Title logo is shifted to the left in Master Quest
@@ -505,10 +506,6 @@ void EnMag_DrawInner(Actor* thisx, PlayState* play, Gfx** gfxP) {
     static u8 noControllerFontIndices[2][12] = {
         { 0x17, 0x18, 0x0C, 0x18, 0x17, 0x1D, 0x1B, 0x18, 0x15, 0x15, 0x0E, 0x1B },
         { 0xB8, 0xB9, 0xAD, 0xB9, 0xB8, 0xBE, 0xBC, 0xB9, 0xB6, 0xB6, 0xAF, 0xBC },
-    };
-    static u8 pressStartFontIndices[2][10] = {
-        { 0x19, 0x1B, 0x0E, 0x1C, 0x1C, 0x1C, 0x1D, 0x0A, 0x1B, 0x1D },
-        { 0xBA, 0xBC, 0xAF, 0xBD, 0xBD, 0xBD, 0xBE, 0xAB, 0xBC, 0xBE },
     };
     static void* effectMaskTextures[] = {
         gTitleEffectMask00Tex, gTitleEffectMask01Tex, gTitleEffectMask02Tex,
@@ -558,6 +555,12 @@ void EnMag_DrawInner(Actor* thisx, PlayState* play, Gfx** gfxP) {
 
     if ((s16)this->mainAlpha != 0) {
         EnMag_DrawImageRGBA32(&gfx, 160 + LOGO_X_SHIFT, 100, (u8*)LOGO_TEX, 160, 160);
+        if (!(this->speechFlags & 1) && (!isMQ || this->subAlpha > 0)) {
+            const bool masterQuestCaption = isMQ && gSaveContext.language != LANGUAGE_JPN &&
+                                            ResourceMgr_GetGameVersion(0) != OOT_NTSC_JP_MQ;
+            GameInteractor_ExecuteOnTitleScreen(masterQuestCaption, NULL);
+            this->speechFlags |= 1;
+        }
     }
 
     Gfx_SetupDL_39Ptr(&gfx);
@@ -661,6 +664,13 @@ void EnMag_DrawInner(Actor* thisx, PlayState* play, Gfx** gfxP) {
 
     if (gSaveContext.fileNum == 0xFEDC) {
         // Draw "NO CONTROLLER" Text
+        if (!(this->speechFlags & 4) && textFadeTimer > 0) {
+            const u8 language = CVarGetInteger(CVAR_SETTING("TitleScreenTranslation"), 0) &&
+                                        ResourceMgr_IsPalLoaded() && gSaveContext.language != LANGUAGE_JPN
+                                    ? gSaveContext.language : LANGUAGE_ENG;
+            GameInteractor_ExecuteOnTitleScreen(false, noControllerMsg[language]);
+            this->speechFlags |= 4;
+        }
         textAlpha = textFadeTimer * 10;
         if (textAlpha >= 255) {
             textAlpha = 255;
@@ -699,46 +709,6 @@ void EnMag_DrawInner(Actor* thisx, PlayState* play, Gfx** gfxP) {
                 }
             }
         }
-    } else if (this->copyrightAlpha >= 200.0f) {
-        // Draw "PRESS START" Text
-        textAlpha = textFadeTimer * 10;
-        if (textAlpha >= 255) {
-            textAlpha = 255;
-        }
-
-        // Text Shadow
-        gDPPipeSync(gfx++);
-        gDPSetCombineLERP(gfx++, 0, 0, 0, PRIMITIVE, TEXEL0, 0, PRIMITIVE, 0, 0, 0, 0, PRIMITIVE, TEXEL0, 0, PRIMITIVE,
-                          0);
-        gDPSetPrimColor(gfx++, 0, 0, 0, 0, 0, textAlpha);
-
-        if (EnMag_ShouldDrawPressStart(font, &gfx, false)) {
-            rectLeft = YREG(7) + 1;
-            for (i = 0; i < ARRAY_COUNT(pressStartFontIndices[sFontType]); i++) {
-                EnMag_DrawCharTexture(&gfx, font->fontBuf + pressStartFontIndices[sFontType][i] * FONT_CHAR_TEX_SIZE,
-                                      rectLeft, YREG(10) + 172);
-                rectLeft += YREG(8);
-                if (i == 4) {
-                    rectLeft += YREG(9);
-                }
-            }
-        }
-
-        // Actual Text
-        gDPPipeSync(gfx++);
-        gDPSetPrimColor(gfx++, 0, 0, YREG(4), YREG(5), YREG(6), textAlpha);
-
-        if (EnMag_ShouldDrawPressStart(font, &gfx, true)) {
-            rectLeft = YREG(7);
-            for (i = 0; i < ARRAY_COUNT(pressStartFontIndices[sFontType]); i++) {
-                EnMag_DrawCharTexture(&gfx, font->fontBuf + pressStartFontIndices[sFontType][i] * FONT_CHAR_TEX_SIZE,
-                                      rectLeft, YREG(10) + 171);
-                rectLeft += YREG(8);
-                if (i == 4) {
-                    rectLeft += YREG(9);
-                }
-            }
-        }
     }
 
     if (textFadeDirection != 0) {
@@ -772,4 +742,16 @@ void EnMag_Draw(Actor* thisx, PlayState* play) {
     POLY_OPA_DISP = gfx;
 
     CLOSE_DISPS(play->state.gfxCtx);
+    EnMag* this = (EnMag*)thisx;
+    if (gSaveContext.fileNum != 0xFEDC && this->copyrightAlpha >= 200.0f) {
+        const u8 language = CVarGetInteger(CVAR_SETTING("TitleScreenTranslation"), 0) &&
+                                    ResourceMgr_IsPalLoaded() && gSaveContext.language != LANGUAGE_JPN
+                                ? gSaveContext.language : LANGUAGE_ENG;
+        if (!(this->speechFlags & 2)) {
+            NativeOptions_SpeakTitleItem(pressStartMsg[language], this->optionsSelected, true);
+            this->speechFlags |= 2;
+        }
+        NativeOptions_DrawTitleMenu(play->state.gfxCtx, pressStartMsg[language], this->optionsSelected,
+                                    (s16)this->copyrightAlpha);
+    }
 }

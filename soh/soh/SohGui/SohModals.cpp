@@ -1,92 +1,125 @@
 #include "SohModals.h"
-#include <imgui.h>
-#include <vector>
-#include <string>
-#include <libultraship/bridge.h>
-#include <libultraship/libultraship.h>
-#include "UIWidgets.hpp"
 #include "SohGui.hpp"
-#include "soh/OTRGlobals.h"
-#include "z64.h"
+#include "soh/NativeOptions/NativeOptions.h"
+#include <deque>
+#include <mutex>
 
-extern "C" PlayState* gPlayState;
-struct SohModal {
-    std::string title_;
-    std::string message_;
-    std::string button1_;
-    std::string button2_;
-    std::function<void()> button1callback_;
-    std::function<void()> button2callback_;
+namespace SohGui {
+namespace {
+struct Modal {
+    std::string title, message, button1, button2;
+    std::function<void()> callback1, callback2;
+    bool active = false;
+    bool dismissed = false;
 };
-std::vector<SohModal> modals;
+std::deque<std::shared_ptr<Modal>> modals;
+std::mutex modalMutex;
 
-bool closePopup = false;
-
-void SohModalWindow::Draw() {
-    if (!IsVisible()) {
-        return;
-    }
-    DrawElement();
-    // Sync up the IsVisible flag if it was changed by ImGui
-    SyncVisibilityConsoleVariable();
+void Remove(const std::shared_ptr<Modal>& modal) {
+    std::lock_guard lock(modalMutex);
+    auto it = std::find(modals.begin(), modals.end(), modal);
+    if (it != modals.end()) modals.erase(it);
+}
 }
 
-void SohModalWindow::DrawElement() {
-    if (modals.size() > 0) {
-        SohModal curModal = modals.at(0);
-        if (!ImGui::IsPopupOpen(curModal.title_.c_str())) {
-            ImGui::OpenPopup(curModal.title_.c_str());
-        }
-        if (closePopup) {
-            ImGui::CloseCurrentPopup();
-            modals.erase(modals.begin());
-            closePopup = false;
-        }
-        ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-        if (ImGui::BeginPopupModal(curModal.title_.c_str(), NULL,
-                                   ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize |
-                                       ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
-                                       ImGuiWindowFlags_NoSavedSettings)) {
-            ImGui::Text("%s", curModal.message_.c_str());
-            UIWidgets::PushStyleButton(THEME_COLOR);
-            if (ImGui::Button(curModal.button1_.c_str())) {
-                if (curModal.button1callback_ != nullptr) {
-                    curModal.button1callback_();
-                }
-                ImGui::CloseCurrentPopup();
-                modals.erase(modals.begin());
-            }
-            UIWidgets::PopStyleButton();
-            if (curModal.button2_ != "") {
-                ImGui::SameLine();
-                UIWidgets::PushStyleButton(THEME_COLOR);
-                if (ImGui::Button(curModal.button2_.c_str())) {
-                    if (curModal.button2callback_ != nullptr) {
-                        curModal.button2callback_();
-                    }
-                    ImGui::CloseCurrentPopup();
-                    modals.erase(modals.begin());
-                }
-                UIWidgets::PopStyleButton();
-            }
-            ImGui::EndPopup();
-        }
-    }
+void RegisterPopup(std::string title, std::string message, std::string button1, std::string button2,
+                   std::function<void()> callback1, std::function<void()> callback2) {
+    std::lock_guard lock(modalMutex);
+    modals.push_back(std::make_shared<Modal>(Modal{std::move(title), std::move(message),
+        std::move(button1), std::move(button2), std::move(callback1), std::move(callback2)}));
 }
 
-void SohModalWindow::RegisterPopup(std::string title, std::string message, std::string button1, std::string button2,
-                                   std::function<void()> button1callback, std::function<void()> button2callback) {
-    modals.push_back({ title, message, button1, button2, button1callback, button2callback });
-}
-
-size_t SohModalWindow::PopupsQueued() {
+size_t PopupsQueued() {
+    std::lock_guard lock(modalMutex);
     return modals.size();
 }
 
-bool SohModalWindow::IsPopupOpen(std::string title) {
-    return !modals.empty() && modals.at(0).title_ == title;
+bool DismissPopup(std::string title) {
+    std::lock_guard lock(modalMutex);
+    if (modals.empty() || modals.front()->title != title) return false;
+    modals.front()->dismissed = true;
+    return true;
 }
 
-void SohModalWindow::DismissPopup() {
-    closePopup = true;
+bool UpdateNativePopups() {
+    namespace N = NativeOptions;
+    std::shared_ptr<Modal> modal;
+    bool dismissed;
+    {
+        std::lock_guard lock(modalMutex);
+        if (modals.empty()) return false;
+        modal = modals.front();
+        dismissed = modal->dismissed;
+    }
+    const auto id = "port_popup/" + modal->title;
+    if (dismissed) {
+        if (modal->active && N::GetModel().CurrentPage() && N::GetModel().CurrentPage()->id == id)
+            N::GetModel().Back();
+        else if (!modal->active) Remove(modal);
+        return false;
+    }
+    if (modal->active) return false;
+    modal->active = true;
+    auto page = N::MakePage(id, modal->title, [modal] {
+        std::vector<N::Row> rows{N::Action("first", modal->button1, [modal] {
+            N::GetModel().Back(modal->callback1);
+        })};
+        if (!modal->button2.empty())
+            rows.push_back(N::Action("second", modal->button2, [modal] {
+                N::GetModel().Back(modal->callback2);
+            }));
+        return rows;
+    }, modal->message);
+    page->popup = true;
+    page->onClose = [modal] { Remove(modal); };
+    NativeOptions_Open();
+    if (N::GetModel().IsOpen()) N::GetModel().Push(page);
+    else N::GetModel().Open(page);
+    return true;
+}
+
+void DrawSetupPopups() {
+    std::shared_ptr<Modal> modal;
+    bool dismissed;
+    {
+        std::lock_guard lock(modalMutex);
+        if (modals.empty()) return;
+        modal = modals.front();
+        dismissed = modal->dismissed;
+    }
+    if (dismissed) {
+        Remove(modal);
+        return;
+    }
+    if (!ImGui::IsPopupOpen(modal->title.c_str())) ImGui::OpenPopup(modal->title.c_str());
+    if (!ImGui::BeginPopupModal(modal->title.c_str(), nullptr,
+                               ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings)) return;
+    ImGui::PushTextWrapPos(ImGui::GetFontSize() * 40);
+    ImGui::TextUnformatted(modal->message.c_str());
+    ImGui::PopTextWrapPos();
+    std::function<void()> callback;
+    bool selected = false;
+    if (ImGui::Button(modal->button1.c_str())) {
+        selected = true;
+        callback = modal->callback1;
+    }
+    if (!modal->button2.empty()) {
+        ImGui::SameLine();
+        if (ImGui::Button(modal->button2.c_str())) {
+            selected = true;
+            callback = modal->callback2;
+        }
+    }
+    if (selected) ImGui::CloseCurrentPopup();
+    ImGui::EndPopup();
+    if (selected) {
+        Remove(modal);
+        if (callback) callback();
+    }
+}
+
+void ClearNativePopups() {
+    std::lock_guard lock(modalMutex);
+    modals.clear();
+}
 }

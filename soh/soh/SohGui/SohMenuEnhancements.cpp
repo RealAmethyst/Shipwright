@@ -1,10 +1,11 @@
-﻿#include "SohMenu.h"
+#include "SohMenu.h"
 #include <soh/Enhancements/enhancementTypes.h>
 #include <soh/Enhancements/mods.h>
 #include <soh/Enhancements/game-interactor/GameInteractor.h>
 #include <soh/OTRGlobals.h>
 #include <soh/Enhancements/cosmetics/authenticGfxPatches.h>
 #include <soh/Enhancements/TimeDisplay/TimeDisplay.h>
+#include "soh/NativeOptions/NativeOptions.h"
 
 extern "C" {
 #include "functions.h"
@@ -364,7 +365,6 @@ void SohMenu::AddMenuEnhancements() {
             Ship::Context::GetInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
         });
     AddWidget(path, "None##Skips", WIDGET_BUTTON)
-        .SameLine(true)
         .Options(ButtonOptions().Size(Sizes::Inline))
         .Callback([](WidgetInfo& info) {
             CVAR_INT_SHIP_INIT(CVAR_ENHANCEMENT("TimeSavers.SkipCutscene.Intro"), false);
@@ -1870,7 +1870,6 @@ void SohMenu::AddMenuEnhancements() {
         .CVar(CVAR_WINDOW("CosmeticsEditor"))
         .RaceDisable(false)
         .WindowName("Cosmetics Editor")
-        .HideInSearch(true)
         .Options(WindowButtonOptions().Tooltip("Enables the separate Cosmetics Editor Window."));
 
     // Audio Editor
@@ -1880,7 +1879,6 @@ void SohMenu::AddMenuEnhancements() {
         .CVar(CVAR_WINDOW("AudioEditor"))
         .RaceDisable(false)
         .WindowName("Audio Editor")
-        .HideInSearch(true)
         .Options(WindowButtonOptions().Tooltip("Enables the separate Audio Editor Window."));
 
     // Gameplay Stats
@@ -1890,7 +1888,6 @@ void SohMenu::AddMenuEnhancements() {
         .CVar(CVAR_WINDOW("GameplayStats"))
         .RaceDisable(false)
         .WindowName("Gameplay Stats")
-        .HideInSearch(true)
         .Options(WindowButtonOptions().Tooltip("Enables the separate Gameplay Stats Window."));
 
     // Time Splits
@@ -1900,7 +1897,6 @@ void SohMenu::AddMenuEnhancements() {
         .CVar(CVAR_WINDOW("TimeSplits"))
         .RaceDisable(false)
         .WindowName("Time Splits")
-        .HideInSearch(true)
         .Options(WindowButtonOptions().Tooltip("Enables the separate Time Splits Window."));
 
     // Timers
@@ -1910,7 +1906,14 @@ void SohMenu::AddMenuEnhancements() {
         .CVar(CVAR_WINDOW("TimeDisplayEnabled"))
         .RaceDisable(false)
         .WindowName("Additional Timers")
-        .Options(WindowButtonOptions().Tooltip("Enables the separate Additional Timers Window."));
+        .Options(WindowButtonOptions().Tooltip("Enables the separate Additional Timers Window.").EmbedWindow(false));
+    AddWidget(path, NativeOptions::Text("overlay_position"), WIDGET_CUSTOM)
+        .RaceDisable(false)
+        .NativePage([] {
+            auto page = NativeOptions::OverlayLayoutPage("TimerDisplay");
+            page->description.clear();
+            return page;
+        }, NativeOptions::Text("overlay_position"));
     AddWidget(path, "Font Scale: %.2fx", WIDGET_CVAR_SLIDER_FLOAT)
         .CVar(CVAR_TIME_DISPLAY("FontScale"))
         .RaceDisable(false)

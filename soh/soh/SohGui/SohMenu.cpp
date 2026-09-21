@@ -1,4 +1,6 @@
 #include "SohMenu.h"
+#include "soh/NativeOptions/NativeOptions.h"
+#include "soh/NativeOptions/OptionsControllers.h"
 #include <ship/window/gui/GuiMenuBar.h>
 #include <ship/window/gui/GuiElement.h>
 #include <ship/utils/StringHelper.h>
@@ -81,7 +83,7 @@ WidgetInfo& SohMenu::AddWidget(WidgetPath& pathInfo, std::string widgetName, Wid
 }
 
 SohMenu::SohMenu(const std::string& consoleVariable, const std::string& name)
-    : Menu(consoleVariable, name, 0, UIWidgets::Colors::LightBlue) {
+    : Menu(consoleVariable, name) {
 }
 
 void SohMenu::AddMenuElements() {
@@ -91,15 +93,10 @@ void SohMenu::AddMenuElements() {
     AddMenuNetwork();
     AddMenuDevTools();
 
-    if (CVarGetInteger(CVAR_SETTING("Menu.SidebarSearch"), 0)) {
-        InsertSidebarSearch();
-    }
-
     for (auto& initFunc : MenuInit::GetInitFuncs()) {
         initFunc();
     }
 
-    mMenuElementsInitialized = true;
 }
 
 void SohMenu::InitElement() {
@@ -170,12 +167,22 @@ void SohMenu::UpdateElement() {
 }
 
 void SohMenu::Draw() {
-    Ship::Menu::Draw();
+    NativeOptions::CollectKeyboardInput();
+}
+
+bool SohMenu::HandleMenuToggle() {
+    return NativeOptions::CancelControllerCapture();
+}
+
+bool SohMenu::HidesGameOverlays() const {
+    return mIsVisible || (gPlayState && gPlayState->pauseCtx.optionsTab &&
+                         gPlayState->pauseCtx.state == 6 && gPlayState->pauseCtx.debugState == 0);
+}
+
+void SohMenu::DrawGameOverlay(ImVec2 position, ImVec2 size) {
+    NativeOptions::DrawDebuggerOverlay(position.x, position.y, size.x, size.y);
 }
 
 void SohMenu::DrawElement() {
-    if (mMenuElementsInitialized) {
-        Ship::Menu::DrawElement();
-    }
 }
 } // namespace SohGui

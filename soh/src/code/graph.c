@@ -8,6 +8,7 @@
 
 #include "soh/Enhancements/gameconsole.h"
 #include "soh/OTRGlobals.h"
+#include "soh/NativeOptions/NativeOptions.h"
 #include "libultraship/bridge.h"
 
 #define GFXPOOL_HEAD_MAGIC 0x1234
@@ -106,6 +107,7 @@ void Graph_UCodeFaultClient(Gfx* workBuf) {
 void Graph_InitTHGA(GraphicsContext* gfxCtx) {
     GfxPool* pool = &gGfxPools[gfxCtx->gfxPoolIdx & 1];
 
+    NativeOptions_BeginGraphicsFrame(gfxCtx);
     pool->headMagic = GFXPOOL_HEAD_MAGIC;
     pool->tailMagic = GFXPOOL_TAIL_MAGIC;
     THGA_Ct(&gfxCtx->polyOpa, pool->polyOpaBuffer, sizeof(pool->polyOpaBuffer));
@@ -277,7 +279,8 @@ void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {
 
     // Skip game frame updates while gfx debugger is active, and execute with the last frame's DL buffer
     if (GfxDebuggerIsDebugging()) {
-        Graph_ProcessGfxCommands(runFrameContext.gfxCtx.workBuffer);
+        GameState_ReqPadData(gameState);
+        NativeOptions_Update(gameState);
         return;
     }
 

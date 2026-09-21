@@ -16,7 +16,6 @@ extern "C" {
 namespace SohGui {
 
 extern std::shared_ptr<SohMenu> mSohMenu;
-extern std::shared_ptr<SohModalWindow> mModalWindow;
 using namespace UIWidgets;
 
 static std::map<int32_t, const char*> imguiScaleOptions = {
@@ -24,23 +23,6 @@ static std::map<int32_t, const char*> imguiScaleOptions = {
     { 1, "Normal" },
     { 2, "Large" },
     { 3, "X-Large" },
-};
-
-static const std::map<int32_t, const char*> menuThemeOptions = {
-    { UIWidgets::Colors::Red, "Red" },
-    { UIWidgets::Colors::DarkRed, "Dark Red" },
-    { UIWidgets::Colors::Orange, "Orange" },
-    { UIWidgets::Colors::Green, "Green" },
-    { UIWidgets::Colors::DarkGreen, "Dark Green" },
-    { UIWidgets::Colors::LightBlue, "Light Blue" },
-    { UIWidgets::Colors::Blue, "Blue" },
-    { UIWidgets::Colors::DarkBlue, "Dark Blue" },
-    { UIWidgets::Colors::Indigo, "Indigo" },
-    { UIWidgets::Colors::Violet, "Violet" },
-    { UIWidgets::Colors::Purple, "Purple" },
-    { UIWidgets::Colors::Brown, "Brown" },
-    { UIWidgets::Colors::Gray, "Gray" },
-    { UIWidgets::Colors::DarkGray, "Dark Gray" },
 };
 
 static const std::map<int32_t, const char*> textureFilteringMap = {
@@ -129,22 +111,7 @@ void SohMenu::AddMenuSettings() {
     WidgetPath path = { "Settings", "General", SECTION_COLUMN_1 };
 
     // General - Settings
-    AddWidget(path, "Menu Settings", WIDGET_SEPARATOR_TEXT);
-    AddWidget(path, "Menu Theme", WIDGET_CVAR_COMBOBOX)
-        .CVar(CVAR_SETTING("Menu.Theme"))
-        .RaceDisable(false)
-        .Options(ComboboxOptions()
-                     .Tooltip("Changes the Theme of the Menu Widgets.")
-                     .ComboMap(menuThemeOptions)
-                     .DefaultIndex(Colors::LightBlue));
 #if not defined(__SWITCH__) and not defined(__WIIU__)
-    AddWidget(path, "Menu Controller Navigation", WIDGET_CVAR_CHECKBOX)
-        .CVar(CVAR_IMGUI_CONTROLLER_NAV)
-        .RaceDisable(false)
-        .Options(CheckboxOptions().Tooltip(
-            "Allows controller navigation of the port menu (Settings, Enhancements,...)\nCAUTION: "
-            "This will disable game inputs while the menu is visible.\n\nD-pad to move between "
-            "items, A to select, B to move up in scope."));
     AddWidget(path, "Allow background inputs", WIDGET_CVAR_CHECKBOX)
         .CVar(CVAR_ALLOW_BACKGROUND_INPUTS)
         .RaceDisable(false)
@@ -156,12 +123,6 @@ void SohMenu::AddMenuSettings() {
                      .Tooltip("Allows controller inputs to be picked up by the game even when the game window isn't "
                               "the focused window.")
                      .DefaultValue(1));
-    AddWidget(path, "Menu Background Opacity", WIDGET_CVAR_SLIDER_FLOAT)
-        .CVar(CVAR_SETTING("Menu.BackgroundOpacity"))
-        .RaceDisable(false)
-        .Options(FloatSliderOptions().DefaultValue(0.85f).IsPercentage().Tooltip(
-            "Sets the opacity of the background of the port menu."));
-
     AddWidget(path, "General Settings", WIDGET_SEPARATOR_TEXT);
     AddWidget(path, "Cursor Always Visible", WIDGET_CVAR_CHECKBOX)
         .CVar(CVAR_SETTING("CursorVisibility"))
@@ -172,23 +133,6 @@ void SohMenu::AddMenuSettings() {
         })
         .Options(CheckboxOptions().Tooltip("Makes the cursor always visible, even in full screen."));
 #endif
-    AddWidget(path, "Search In Sidebar", WIDGET_CVAR_CHECKBOX)
-        .CVar(CVAR_SETTING("Menu.SidebarSearch"))
-        .RaceDisable(false)
-        .Callback([](WidgetInfo& info) {
-            if (CVarGetInteger(CVAR_SETTING("Menu.SidebarSearch"), 0)) {
-                mSohMenu->InsertSidebarSearch();
-            } else {
-                mSohMenu->RemoveSidebarSearch();
-            }
-        })
-        .Options(CheckboxOptions().Tooltip(
-            "Displays the Search menu as a sidebar entry in Settings instead of in the header."));
-    AddWidget(path, "Search Input Autofocus", WIDGET_CVAR_CHECKBOX)
-        .CVar(CVAR_SETTING("Menu.SearchAutofocus"))
-        .RaceDisable(false)
-        .Options(CheckboxOptions().Tooltip(
-            "Search input box gets autofocus when visible. Does not affect using other widgets."));
     AddWidget(path, "Reset Button Combination:", WIDGET_CVAR_BTN_SELECTOR)
         .CVar("gSettings.ResetBtn")
         .Options(BtnSelectorOptions().DefaultValue(BTN_CUSTOM_MODIFIER2));
@@ -233,11 +177,11 @@ void SohMenu::AddMenuSettings() {
                      .ComboMap(languages)
                      .DefaultIndex(LANGUAGE_ENG));
     AddWidget(path, "Accessibility", WIDGET_SEPARATOR_TEXT);
-#if defined(_WIN32) || defined(__APPLE__) || defined(ESPEAK)
+#ifdef SOH_PRISM
     AddWidget(path, "Text to Speech", WIDGET_CVAR_CHECKBOX)
         .CVar(CVAR_SETTING("A11yTTS"))
         .RaceDisable(false)
-        .Options(CheckboxOptions().Tooltip("Enables text to speech for in game dialog"));
+        .Options(CheckboxOptions().DefaultValue(true).Tooltip("Enables screen reader speech through Prism"));
 #endif
     AddWidget(path, "Disable Idle Camera Re-Centering", WIDGET_CVAR_CHECKBOX)
         .CVar(CVAR_SETTING("A11yDisableIdleCam"))
@@ -318,7 +262,9 @@ void SohMenu::AddMenuSettings() {
         .Callback([](WidgetInfo& info) {
             Audio_SetGameVolume(SEQ_PLAYER_SFX, ((float)CVarGetInteger(CVAR_SETTING("Volume.SFX"), 100) / 100.0f));
         });
-    AddWidget(path, "Audio API (Needs reload)", WIDGET_AUDIO_BACKEND).RaceDisable(false);
+    AddWidget(path, "Audio API (Needs reload)", WIDGET_AUDIO_BACKEND)
+        .RaceDisable(false)
+        .Options(ComboboxOptions().Tooltip("Sets the audio API used by the game. Requires a relaunch to take effect."));
 
     // Graphics Settings
     static int32_t maxFps = 360;
@@ -328,10 +274,13 @@ void SohMenu::AddMenuSettings() {
     path.sidebarName = "Graphics";
     AddSidebarEntry("Settings", "Graphics", 3);
     AddWidget(path, "Graphics Options", WIDGET_SEPARATOR_TEXT);
-    AddWidget(path, "Toggle Fullscreen", WIDGET_BUTTON)
+    static bool fullscreen = false;
+    AddWidget(path, "Toggle Fullscreen", WIDGET_CHECKBOX)
         .RaceDisable(false)
-        .Callback([](WidgetInfo& info) { Ship::Context::GetInstance()->GetWindow()->ToggleFullscreen(); })
-        .Options(ButtonOptions().Tooltip("Toggles Fullscreen On/Off."));
+        .ValuePointer(&fullscreen)
+        .PreFunc([](WidgetInfo& info) { fullscreen = Ship::Context::GetInstance()->GetWindow()->IsFullscreen(); })
+        .Callback([](WidgetInfo& info) { Ship::Context::GetInstance()->GetWindow()->SetFullscreen(fullscreen); })
+        .Options(CheckboxOptions().Tooltip("Toggles Fullscreen On/Off."));
     AddWidget(path, "Internal Resolution", WIDGET_CVAR_SLIDER_FLOAT)
         .CVar(CVAR_INTERNAL_RESOLUTION)
         .RaceDisable(false)
@@ -395,7 +344,9 @@ void SohMenu::AddMenuSettings() {
         .CVar(CVAR_SETTING("MatchRefreshRate"))
         .RaceDisable(false)
         .Options(CheckboxOptions().Tooltip("Matches interpolation value to the refresh rate of your display."));
-    AddWidget(path, "Renderer API (Needs reload)", WIDGET_VIDEO_BACKEND).RaceDisable(false);
+    AddWidget(path, "Renderer API (Needs reload)", WIDGET_VIDEO_BACKEND)
+        .RaceDisable(false)
+        .Options(ComboboxOptions().Tooltip("Sets the renderer API used by the game."));
     AddWidget(path, "Enable Vsync", WIDGET_CVAR_CHECKBOX)
         .CVar(CVAR_VSYNC_ENABLED)
         .RaceDisable(false)
@@ -432,7 +383,7 @@ void SohMenu::AddMenuSettings() {
     AddSidebarEntry("Settings", "Controls", 2);
     AddWidget(path, "Clear Devices", WIDGET_BUTTON)
         .Callback([](WidgetInfo& info) {
-            SohGui::mModalWindow->RegisterPopup(
+            SohGui::RegisterPopup(
                 "Clear Config",
                 "This will completely erase the controls config, including registered devices.\nContinue?", "Clear",
                 "Cancel",
@@ -449,7 +400,6 @@ void SohMenu::AddMenuSettings() {
         .CVar(CVAR_WINDOW("ControllerConfiguration"))
         .RaceDisable(false)
         .WindowName("Configure Controller")
-        .HideInSearch(true)
         .Options(WindowButtonOptions().Tooltip("Enables the separate Bindings Window."));
 
     // Input Viewer
@@ -460,7 +410,6 @@ void SohMenu::AddMenuSettings() {
         .CVar(CVAR_WINDOW("InputViewer"))
         .RaceDisable(false)
         .WindowName("Input Viewer")
-        .HideInSearch(true)
         .Options(WindowButtonOptions().Tooltip("Toggles the Input Viewer.").EmbedWindow(false));
 
     AddWidget(path, "Input Viewer Settings", WIDGET_SEPARATOR_TEXT);
@@ -468,7 +417,6 @@ void SohMenu::AddMenuSettings() {
         .CVar(CVAR_WINDOW("InputViewerSettings"))
         .RaceDisable(false)
         .WindowName("Input Viewer Settings")
-        .HideInSearch(true)
         .Options(WindowButtonOptions().Tooltip("Enables the separate Input Viewer Settings Window."));
 
     // Notifications
@@ -531,7 +479,6 @@ void SohMenu::AddMenuSettings() {
     AddWidget(path, "Popout Mod Menu Window", WIDGET_WINDOW_BUTTON)
         .CVar(CVAR_WINDOW("ModMenu"))
         .WindowName("Mod Menu")
-        .HideInSearch(true)
         .Options(WindowButtonOptions().Tooltip("Enables the separate Mod Menu Window."));
 }
 

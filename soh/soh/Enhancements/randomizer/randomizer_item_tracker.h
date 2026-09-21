@@ -34,7 +34,9 @@ static std::vector<const char*> itemTrackerWindowIDs = { "Item Tracker",
                                                          "Dungeon Items Tracker",
                                                          "Greg Tracker",
                                                          "Triforce Piece Tracker",
+                                                         "Bean Soul Tracker",
                                                          "Boss Soul Tracker",
+                                                         "Jabber Nut Tracker",
                                                          "Ocarina Button Tracker",
                                                          "Overworld Key Tracker",
                                                          "Fishing Pole Tracker",
@@ -46,16 +48,6 @@ typedef struct ItemTrackerDungeon {
     uint32_t id;
     std::vector<uint32_t> items;
 } ItemTrackerDungeon;
-
-class ItemTrackerSettingsWindow final : public Ship::GuiWindow {
-  public:
-    using GuiWindow::GuiWindow;
-
-  protected:
-    void InitElement() override{};
-    void DrawElement() override;
-    void UpdateElement() override{};
-};
 
 class ItemTrackerWindow final : public Ship::GuiWindow {
   public:

@@ -87,6 +87,7 @@ class SaveManager {
     void SaveSection(int fileNum, int sectionID, bool threaded);
     int GetSaveSectionID(std::string& name);
     void SaveGlobal();
+    void EnsureGlobalLoaded();
     void LoadFile(int fileNum);
     bool SaveFile_Exist(int fileNum);
     void ThreadPoolWait();
@@ -161,6 +162,8 @@ class SaveManager {
 
     void ConvertFromUnversioned();
     void CreateDefaultGlobal();
+    void LoadGlobal();
+    bool globalLoaded = false;
 
     void SaveFileThreaded(int fileNum, SaveContext* saveContext, int sectionID);
 

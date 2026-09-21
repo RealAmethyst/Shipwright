@@ -53,6 +53,19 @@ Congratulations, you are now sailing with the Ship of Harkinian! Have fun!
 
 # Configuration
 
+This accessibility build uses the game's Options screen for all port settings. Open it from the title screen,
+file selection, the Options pause tab, or Escape. The pause tab sits between Equipment and Items.
+Use your mapped stick or D-pad to navigate, A to select, B to return, and left/right to adjust settings.
+R reads the complete description. Keyboard controls are arrow keys, Enter, Backspace and F1 for details.
+
+Prism speaks the focused setting, its value, description and position. Settings are grouped under Accessibility,
+Audio, Display, Controls, Gameplay, Cosmetics, Randomizer, Trackers, Network, System and Advanced. Search is the
+first entry. Developer tools are under Advanced; tracker overlays keep their existing layouts.
+
+Controller navigation follows the game bindings. To remap, select a binding, release all inputs, then press the new
+input. Escape cancels capture, and an idle capture cancels after ten seconds. If you clear your controller bindings,
+use the keyboard to restore them under Controls, Configure Controller, Link (P1), Set Defaults.
+
 ### Default keyboard configuration
 | N64 | A | B | Z | Start | Analog stick | C buttons | D-Pad |
 | - | - | - | - | - | - | - | - |
@@ -66,7 +79,6 @@ Congratulations, you are now sailing with the Ship of Harkinian! Have fun!
 | F5 | Save state |
 | F6 | Change state |
 | F7 | Load state |
-| F9 | Toggle Text-to-Speech (Windows and Mac only) |
 | F11 | Fullscreen |
 | Tab | Toggle Alternate assets |
 | Ctrl+R | Reset |
@@ -77,7 +89,8 @@ Ship of Harkinian (SOH) is built atop a custom library dubbed libultraship (LUS)
 In order for the game to function, you will require a **legally acquired** ROM for Ocarina of Time. Click [here](https://ship.equipment/) to check the compatibility of your specific rom. Any copyrighted assets are extracted from the ROM and reformatted as a .o2r archive file which the code uses.
 
 ### Graphics Backends
-Currently, there are three rendering APIs supported: DirectX11 (Windows), OpenGL (all platforms), and Metal (MacOS). You can change which API to use in the `Settings` menu of the menubar, which requires a restart.  If you're having an issue with crashing, you can change the API in the `shipofharkinian.json` file by finding the line `gfxbackend:""` and changing the value to `sdl` for OpenGL. DirectX 11 is the default on Windows.
+Rendering APIs include DirectX11, OpenGL and Metal, depending on the platform. Select the renderer in Options,
+Display and restart the game to apply it. DirectX 11 is the default on Windows.
 
 # Custom Assets
 

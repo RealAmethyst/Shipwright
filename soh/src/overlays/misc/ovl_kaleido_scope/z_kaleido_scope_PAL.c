@@ -1,8 +1,11 @@
 #include "z_kaleido_scope.h"
+#include "soh/NativeOptions/NativeOptions.h"
+#include "soh/NativeOptions/OptionsPauseNavigation.h"
 #include <stdlib.h>
 #include <string.h>
 
 #include "textures/item_name_static/item_name_static.h"
+#include "textures/title_static/title_static.h"
 #include "textures/icon_item_static/icon_item_static.h"
 #include "textures/icon_item_24_static/icon_item_24_static.h"
 #include "textures/icon_item_nes_static/icon_item_nes_static.h"
@@ -1251,6 +1254,17 @@ void KaleidoScope_SetDefaultCursor(PlayState* play) {
 }
 
 void KaleidoScope_SwitchPage(PauseContext* pauseCtx, u8 pt) {
+    enum NativePauseRoute route = NativeOptions_PauseRoute(pauseCtx->pageIndex, pt != 0, pauseCtx->optionsTab,
+                                                          PAUSE_ITEM, PAUSE_EQUIP);
+    if (route != NATIVE_PAUSE_ROTATE) {
+        pauseCtx->optionsTab = route == NATIVE_PAUSE_ENTER_OPTIONS;
+        pauseCtx->pageSwitchTimer = 0;
+        KaleidoScope_ResetItemCycling();
+        Audio_PlaySoundGeneral(pt ? NA_SE_SY_WIN_SCROLL_RIGHT : NA_SE_SY_WIN_SCROLL_LEFT, &gSfxDefaultPos, 4,
+                               &gSfxDefaultFreqAndVolScale, &gSfxDefaultFreqAndVolScale, &gSfxDefaultReverb);
+        return;
+    }
+    pauseCtx->optionsTab = false;
     pauseCtx->unk_1E4 = 1;
     pauseCtx->unk_1EA = 0;
 
@@ -1300,6 +1314,7 @@ void KaleidoScope_HandlePageToggles(PauseContext* pauseCtx, Input* input) {
 
     if (CVarGetInteger(CVAR_DEVELOPER_TOOLS("DebugEnabled"), 0) && (pauseCtx->debugState == 0) &&
         CHECK_BTN_ALL(input->press.button, Debug_BTN)) {
+        pauseCtx->optionsTab = false;
         pauseCtx->debugState = 1;
         return;
     }
@@ -1315,6 +1330,17 @@ void KaleidoScope_HandlePageToggles(PauseContext* pauseCtx, Input* input) {
     }
 
     bool dpad = CVarGetInteger(CVAR_SETTING("DPadOnPause"), 0);
+    if (pauseCtx->optionsTab) {
+        s16 direction = (pauseCtx->stickRelX > 30 || (dpad && CHECK_BTN_ALL(input->cur.button, BTN_DRIGHT))) ? 2 :
+                        (pauseCtx->stickRelX < -30 || (dpad && CHECK_BTN_ALL(input->cur.button, BTN_DLEFT))) ? 0 : -1;
+        if (direction >= 0) {
+            if (++pauseCtx->pageSwitchTimer >= 10 || pauseCtx->pageSwitchTimer == 0)
+                KaleidoScope_SwitchPage(pauseCtx, direction);
+        } else {
+            pauseCtx->pageSwitchTimer = -1;
+        }
+        return;
+    }
     if (pauseCtx->cursorSpecialPos == PAUSE_CURSOR_PAGE_LEFT) {
         if ((pauseCtx->stickRelX < -30) || (dpad && CHECK_BTN_ALL(input->cur.button, BTN_DLEFT))) {
             pauseCtx->pageSwitchTimer++;
@@ -2275,7 +2301,18 @@ void KaleidoScope_DrawInfoPanel(PlayState* play) {
                 gDPPipeSync(POLY_OPA_DISP++);
                 gDPSetPrimColor(POLY_OPA_DISP++, 0, 0, 255, 200, 0, 255);
 
-                if (pauseCtx->cursorSpecialPos == PAUSE_CURSOR_PAGE_LEFT) {
+                if ((pauseCtx->pageIndex == PAUSE_ITEM && pauseCtx->cursorSpecialPos == PAUSE_CURSOR_PAGE_LEFT) ||
+                    (pauseCtx->pageIndex == PAUSE_EQUIP && pauseCtx->cursorSpecialPos == PAUSE_CURSOR_PAGE_RIGHT)) {
+                    static const void* optionsTextures[] = { gFileSelOptionsButtonENGTex, gFileSelOptionsButtonGERTex,
+                                                             gFileSelOptionsButtonENGTex, gFileSelOptionsButtonJPNTex };
+                    pauseCtx->infoPanelVtx[16].v.ob[0] = pauseCtx->infoPanelVtx[18].v.ob[0] = -31;
+                    pauseCtx->infoPanelVtx[17].v.ob[0] = pauseCtx->infoPanelVtx[19].v.ob[0] = 33;
+                    pauseCtx->infoPanelVtx[17].v.tc[0] = pauseCtx->infoPanelVtx[19].v.tc[0] = 0x800;
+                    gDPLoadTextureBlock(POLY_OPA_DISP++, optionsTextures[gSaveContext.language], G_IM_FMT_IA,
+                                        G_IM_SIZ_16b, 64, 16, 0, G_TX_NOMIRROR | G_TX_CLAMP,
+                                        G_TX_NOMIRROR | G_TX_CLAMP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
+                    gSP1Quadrangle(POLY_OPA_DISP++, 0, 2, 3, 1, 0);
+                } else if (pauseCtx->cursorSpecialPos == PAUSE_CURSOR_PAGE_LEFT) {
                     POLY_OPA_DISP = KaleidoScope_QuadTextureIA8(
                         POLY_OPA_DISP, D_8082AD78[pauseCtx->pageIndex][gSaveContext.language], 128, 16, 0);
                 } else {
@@ -3499,6 +3536,11 @@ void KaleidoScope_Draw(PlayState* play) {
     PauseContext* pauseCtx = &play->pauseCtx;
     InterfaceContext* interfaceCtx = &play->interfaceCtx;
 
+    if (pauseCtx->optionsTab && pauseCtx->state == 6 && pauseCtx->debugState == 0) {
+        NativeOptions_DrawPauseTab(play->state.gfxCtx);
+        return;
+    }
+
     OPEN_DISPS(play->state.gfxCtx);
 
     pauseCtx->stickRelX = input->rel.stick_x;
@@ -3847,6 +3889,8 @@ void KaleidoScope_Update(PlayState* play) {
     s16 stepA;
     s32 pad;
 
+    if (pauseCtx->state != 6) pauseCtx->optionsTab = false;
+
     if ((R_PAUSE_MENU_MODE >= 3) && (((pauseCtx->state >= 4) && (pauseCtx->state <= 7)) ||
                                      ((pauseCtx->state >= 0xA) && (pauseCtx->state <= 0x12)))) {
 
@@ -3859,6 +3903,23 @@ void KaleidoScope_Update(PlayState* play) {
             KaleidoScope_UpdateCursorSize(&play->pauseCtx);
         }
 
+        if (pauseCtx->optionsTab) {
+            if (CHECK_BTN_ALL(input->press.button, BTN_START)) {
+                pauseCtx->optionsTab = false;
+            } else {
+                if (CHECK_BTN_ALL(input->press.button, BTN_B)) {
+                    pauseCtx->optionsTab = false;
+                    pauseCtx->pageSwitchTimer = -1;
+                    input->press.button &= ~BTN_B;
+                    Audio_PlaySoundGeneral(NA_SE_SY_FSEL_CLOSE, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale,
+                                           &gSfxDefaultFreqAndVolScale, &gSfxDefaultReverb);
+                } else if (CHECK_BTN_ALL(input->press.button, BTN_A)) {
+                    NativeOptions_Open();
+                }
+                GameInteractor_ExecuteOnKaleidoscopeUpdate(sInDungeonScene);
+                return;
+            }
+        }
         if (pauseCtx->state == 6) {
             KaleidoScope_UpdateNamePanel(play);
         }

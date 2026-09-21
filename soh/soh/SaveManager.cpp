@@ -409,11 +409,12 @@ void SaveManager::SaveRandomizer(SaveContext* saveContext, int sectionID, bool f
     });
 }
 
-// Init() here is an extension of InitSram, and thus not truly an initializer for SaveManager itself. don't put any
-// class initialization stuff here
-void SaveManager::Init() {
-    // Wait on saves that snuck through the Wait in OnExitGame
-    ThreadPoolWait();
+void SaveManager::EnsureGlobalLoaded() {
+    if (!globalLoaded)
+        LoadGlobal();
+}
+
+void SaveManager::LoadGlobal() {
     const std::filesystem::path sSavePath(Ship::Context::GetPathRelativeToAppDirectory("Save"));
     const std::filesystem::path sGlobalPath = sSavePath / std::string("global.sav");
     auto sOldSavePath = Ship::Context::GetPathRelativeToAppDirectory("oot_save.sav");
@@ -440,15 +441,15 @@ void SaveManager::Init() {
         if (!globalBlock.contains("version")) {
             SPDLOG_WARN("Global save does not contain a version. We are reconstructing it.");
             CreateDefaultGlobal();
+            globalLoaded = true;
             return;
         }
 
         switch (globalBlock["version"].get<int>()) {
             case 1:
-                currentJsonContext = &globalBlock;
-                LoadData("audioSetting", gSaveContext.audioSetting);
-                LoadData("zTargetSetting", gSaveContext.zTargetSetting);
-                LoadData("language", gSaveContext.language);
+                gSaveContext.audioSetting = globalBlock.value("audioSetting", uint8_t{0});
+                gSaveContext.zTargetSetting = globalBlock.value("zTargetSetting", uint8_t{0});
+                gSaveContext.language = globalBlock.value("language", uint8_t{0});
                 break;
             default:
                 SPDLOG_WARN("Global save has a unrecognized version. We are reconstructing it.");
@@ -458,6 +459,15 @@ void SaveManager::Init() {
     } else {
         CreateDefaultGlobal();
     }
+
+    globalLoaded = true;
+}
+
+// Init extends InitSram; global options can also be loaded before the title screen.
+void SaveManager::Init() {
+    // Wait on saves that snuck through the Wait in OnExitGame
+    ThreadPoolWait();
+    LoadGlobal();
 
     // Load files to initialize metadata
     for (int fileNum = 0; fileNum < MaxFiles; fileNum++) {

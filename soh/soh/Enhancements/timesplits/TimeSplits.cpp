@@ -3,6 +3,11 @@
 
 #include <ship/Context.h>
 #include "TimeSplits.h"
+#include "soh/NativeOptions/NativeOptions.h"
+#include "soh/NativeOptions/OptionsFileIO.h"
+#include "soh/NativeOptions/OptionsTableLayout.h"
+#include <filesystem>
+#include <stdexcept>
 #include "soh/Enhancements/gameplaystats.h"
 
 #include "soh/Enhancements/game-interactor/GameInteractor.h"
@@ -35,28 +40,10 @@ using namespace UIWidgets;
 using json = nlohmann::json;
 
 static uint32_t splitBestTimeDisplay;
-static int32_t popupID = -1;
-static int32_t removeIndex = -1;
-static uint32_t tableSize = 0;
-static int skullTokenCount = 0;
-static float timeSplitsWindowSize = 1.0f;
-
-static ImVec4 windowColor = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
-static ImVec4 splitStatusColor = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
 static ImVec4 splitTimeColor = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
 static ImVec4 activeSplitHighlight = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
 
-static ImVec2 imageSize = ImVec2(38.0f, 38.0f);
-static float imagePadding = 2.0f;
-
-std::vector<std::string> keys;
-
-char listNameBuf[25];
-int dragSourceIndex = -1;
-int dragTargetIndex = -1;
-
 std::vector<SplitObject> splitList;
-std::vector<SplitObject> emptyList;
 
 std::vector<SplitObject> splitObjectList = {
     // clang-format off
@@ -233,17 +220,6 @@ std::map<uint32_t, std::vector<uint32_t>> popupList = {
     // clang-format on
 };
 
-std::string removeSpecialCharacters(const std::string& str) {
-    std::string result;
-    for (char ch : str) {
-        // Only keep alphanumeric characters (letters and digits)
-        if (std::isalnum(static_cast<unsigned char>(ch))) {
-            result += ch;
-        }
-    }
-    return result;
-}
-
 std::string formatTimestampTimeSplit(uint32_t value) {
     uint32_t sec = value / 10;
     uint32_t hh = sec / 3600;
@@ -255,10 +231,6 @@ std::string formatTimestampTimeSplit(uint32_t value) {
 
 nlohmann::json ImVec4_to_json(const ImVec4& vec) {
     return nlohmann::json{ { "x", vec.x }, { "y", vec.y }, { "z", vec.z }, { "w", vec.w } };
-}
-
-ImVec4 json_to_ImVec4(const nlohmann::json& jsonVec) {
-    return ImVec4(jsonVec["x"], jsonVec["y"], jsonVec["z"], jsonVec["w"]);
 }
 
 nlohmann::json SplitObject_to_json(const SplitObject& split) {
@@ -275,38 +247,22 @@ nlohmann::json SplitObject_to_json(const SplitObject& split) {
 }
 
 SplitObject json_to_SplitObject(const nlohmann::json& jsonSplit) {
-    SplitObject split;
-    split.splitType = jsonSplit["splitType"];
-    split.splitID = jsonSplit["splitID"];
-    split.splitName = jsonSplit["splitName"].get<std::string>();
-    split.splitImage = jsonSplit["splitImage"].get<std::string>();
-    split.splitTint = json_to_ImVec4(jsonSplit["splitTint"]);
-    split.splitTimeCurrent = jsonSplit["splitTimeCurrent"];
-    split.splitTimeBest = jsonSplit["splitTimeBest"];
-    split.splitTimePreviousBest = jsonSplit["splitTimePreviousBest"];
-    split.splitTimeStatus = jsonSplit["splitTimeStatus"];
-    split.splitSkullTokenCount = jsonSplit["splitSkullTokenCount"];
+    const auto number = [&jsonSplit](const char* key) {
+        const auto& value = jsonSplit.at(key);
+        if (!value.is_number_integer() || (value.is_number_unsigned() ? value.get<uint64_t>() > UINT32_MAX :
+            value.get<int64_t>() < 0 || value.get<int64_t>() > UINT32_MAX))
+            throw std::runtime_error(std::string("Invalid split field: ") + key);
+        return value.get<uint32_t>();
+    };
+    SplitObject split{};
+    split.splitType = number("splitType");
+    split.splitID = number("splitID");
+    split.splitTimeCurrent = number("splitTimeCurrent");
+    split.splitTimeBest = number("splitTimeBest");
+    split.splitTimePreviousBest = number("splitTimePreviousBest");
+    split.splitTimeStatus = SPLIT_STATUS_INACTIVE;
+    split.splitSkullTokenCount = number("splitSkullTokenCount");
     return split;
-}
-
-void TimeSplitsGetImageSize(uint32_t item) {
-    if (item >= ITEM_SONG_MINUET && item <= ITEM_SONG_STORMS) {
-        imageSize = ImVec2(30.0f, 38.0f);
-        imagePadding = 6.0f;
-    } else {
-        imageSize = ImVec2(38.0f, 38.0f);
-        imagePadding = 2.0f;
-    }
-}
-
-void SplitsPushImageButtonStyle() {
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 1.0f, 1.0f, 0.0f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 1.0f, 1.0f, 0.2f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 1.0f, 1.0f, 0.1f));
-}
-
-void SplitsPopImageButtonStyle() {
-    ImGui::PopStyleColor(3);
 }
 
 void TimeSplitsUpdateSplitStatus() {
@@ -326,224 +282,17 @@ void TimeSplitsUpdateSplitStatus() {
     }
 }
 
-void HandleDragAndDrop(std::vector<SplitObject>& objectList, int targetIndex, const std::string& itemName,
-                       ImGuiDragDropFlags flags = ImGuiDragDropFlags_None) {
-    if (ImGui::BeginDragDropSource(flags)) {
-        ImGui::SetDragDropPayload("DragMove", &targetIndex, sizeof(uint32_t));
-        ImGui::Text("Move %s", itemName.c_str());
-        ImGui::EndDragDropSource();
-    }
-
-    if (ImGui::BeginDragDropTarget()) {
-        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DragMove")) {
-            IM_ASSERT(payload->DataSize == sizeof(uint32_t));
-            dragSourceIndex = *(const int*)payload->Data;
-            dragTargetIndex = targetIndex;
-        }
-        ImGui::EndDragDropTarget();
-    }
-}
-
 void TimeSplitCompleteSplits() {
     gSaveContext.ship.stats.itemTimestamp[TIMESTAMP_DEFEAT_GANON] = GAMEPLAYSTAT_TOTAL_TIME;
     gSaveContext.ship.stats.gameComplete = true;
 }
 
 void TimeSplitsSkipSplit(uint32_t index) {
+    if (index >= splitList.size() || !GameInteractor::IsSaveLoaded()) return;
     splitList[index].splitTimeStatus = SPLIT_STATUS_SKIPPED;
     if (index + 1 == splitList.size()) {
         TimeSplitCompleteSplits();
     } else {
-        TimeSplitsUpdateSplitStatus();
-    }
-}
-
-void TimeSplitsFileManagement(uint32_t action, const char* listEntry, std::vector<SplitObject> listData) {
-    std::string filename = Ship::Context::GetPathRelativeToAppDirectory("timesplitdata.json");
-    json saveFile;
-    json listArray = nlohmann::json::array();
-
-    std::ifstream inputFile(filename);
-    if (inputFile.is_open()) {
-        inputFile >> saveFile;
-        inputFile.close();
-    }
-
-    if (action == SPLIT_ACTION_SAVE) {
-        for (auto& data : listData) {
-            listArray.push_back(SplitObject_to_json(data));
-        }
-        saveFile[listEntry] = listArray;
-
-        // Update Save File on Disk
-        std::ofstream outputFile(filename);
-        if (outputFile.is_open()) {
-            outputFile << saveFile.dump(4);
-            outputFile.close();
-        }
-    }
-
-    if (action == SPLIT_ACTION_LOAD) {
-        if (saveFile.contains(listEntry)) {
-            listArray = saveFile[listEntry];
-            splitList.clear();
-
-            for (auto& data : listArray) {
-                splitList.push_back(json_to_SplitObject(data));
-            }
-            splitList[0].splitTimeStatus = SPLIT_STATUS_ACTIVE;
-        }
-    }
-
-    if (action == SPLIT_ACTION_UPDATE) {
-        for (auto& update : listData) {
-            if (update.splitTimeBest < update.splitTimePreviousBest) {
-                update.splitTimePreviousBest = update.splitTimeBest;
-            }
-        }
-    }
-
-    if (action == SPLIT_ACTION_COLLECT) {
-        keys.clear();
-        for (auto& data : saveFile.items()) {
-            keys.push_back(data.key());
-        }
-        if (keys.size() == 0) {
-            keys.push_back("No Saved Lists");
-        }
-    }
-
-    if (action == SPLIT_ACTION_DELETE) {
-        if (saveFile.contains(listEntry)) {
-            saveFile.erase(listEntry);
-
-            std::ofstream outputFile(filename);
-            if (outputFile.is_open()) {
-                outputFile << saveFile.dump(4);
-                outputFile.close();
-            }
-        }
-    }
-}
-
-void TimeSplitsPopUpContext() {
-    if ((popupID != -1) && ImGui::BeginPopup("TimeSplitsPopUp")) {
-        if (popupID == ITEM_SKULL_TOKEN) {
-            ImGui::BeginTable("Token Table", 2);
-            ImGui::TableNextColumn();
-            SplitsPushImageButtonStyle();
-            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2.0f, 2.0f));
-            ImGui::ImageButton(
-                "QUEST_SKULL_TOKEN",
-                Ship::Context::GetInstance()->GetWindow()->GetGui()->GetTextureByName("QUEST_SKULL_TOKEN"),
-                ImVec2(32.0f, 32.0f), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0));
-            ImGui::PopStyleVar();
-            ImGui::TableNextColumn();
-            SplitsPopImageButtonStyle();
-            ImGui::PushItemWidth(150.0f);
-
-            ImGui::BeginGroup();
-            std::string MinusBTNName = " - ##Set Tokens";
-            ImGui::SameLine();
-            if (ImGui::Button(MinusBTNName.c_str()) && skullTokenCount > 0) {
-                skullTokenCount--;
-            }
-            ImGui::SameLine();
-            ImGui::SliderInt("##count", &skullTokenCount, 0, 100, "%d Tokens");
-            std::string PlusBTNName = " + ##Set Tokens";
-            ImGui::SameLine();
-            if (ImGui::Button(PlusBTNName.c_str()) && skullTokenCount < 100) {
-                skullTokenCount++;
-            }
-            ImGui::EndGroup();
-
-            ImGui::PopItemWidth();
-            if (ImGui::Button("Set Tokens")) {
-                auto findID = std::find_if(splitObjectList.begin(), splitObjectList.end(),
-                                           [&](const SplitObject& obj) { return obj.splitID == ITEM_SKULL_TOKEN; });
-                SplitObject& buildTokenObject = *findID;
-                std::string tokenStr = " (" + std::to_string(skullTokenCount) + ")";
-                buildTokenObject.splitName += tokenStr.c_str();
-                buildTokenObject.splitSkullTokenCount = skullTokenCount;
-
-                splitList.push_back(buildTokenObject);
-                TimeSplitsUpdateSplitStatus();
-                ImGui::CloseCurrentPopup();
-                popupID = -1;
-            }
-            ImGui::EndTable();
-        } else {
-            int rowIndex = 0;
-            SplitsPushImageButtonStyle();
-            for (auto item : popupList[popupID]) {
-                auto findID = std::find_if(splitObjectList.begin(), splitObjectList.end(),
-                                           [&](const SplitObject& obj) { return obj.splitID == item; });
-                if (findID == splitObjectList.end()) {
-                    continue;
-                }
-
-                SplitObject& popupObject = *findID;
-                ImGui::BeginGroup();
-                ImGui::PushID(popupObject.splitID);
-                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2.0f, 2.0f));
-                auto ret = ImGui::ImageButton(
-                    popupObject.splitImage.c_str(),
-                    Ship::Context::GetInstance()->GetWindow()->GetGui()->GetTextureByName(popupObject.splitImage),
-                    ImVec2(32.0f, 32.0f), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), popupObject.splitTint);
-                ImGui::PopStyleVar();
-                if (ret) {
-                    splitList.push_back(popupObject);
-                    if (splitList.size() == 1) {
-                        splitList[0].splitTimeStatus = SPLIT_STATUS_ACTIVE;
-                    } else {
-                        splitList[splitList.size() - 1].splitTimeStatus = SPLIT_STATUS_INACTIVE;
-                    }
-                    ImGui::CloseCurrentPopup();
-                    popupID = -1;
-                }
-                ImGui::PopID();
-
-                if (popupObject.splitType == SPLIT_TYPE_UPGRADE) {
-                    if (popupID <= ITEM_SLINGSHOT && popupID != -1) {
-                        ImVec2 imageMin = ImGui::GetItemRectMin();
-                        ImVec2 imageMax = ImGui::GetItemRectMax();
-                        // ImVec2 imageSize = ImVec2(imageMax.x - imageMin.x, imageMax.y - imageMin.y); UNUSED
-                        ImVec2 textPos = ImVec2(imageMax.x - ImGui::CalcTextSize("00").x - 5,
-                                                imageMax.y - ImGui::CalcTextSize("00").y - 5);
-
-                        ImGui::SetCursorScreenPos(textPos);
-                        std::string upgSubstr = popupObject.splitName.substr(popupObject.splitName.size() - 4);
-                        std::string upgOutput = removeSpecialCharacters(upgSubstr);
-                        ImGui::Text("%s", upgOutput.c_str());
-                    }
-                }
-                ImGui::EndGroup();
-                if (rowIndex != 5) {
-                    ImGui::SameLine();
-                }
-                rowIndex++;
-            }
-            SplitsPopImageButtonStyle();
-        }
-        ImGui::EndPopup();
-    }
-}
-
-void TimeSplitsPostDragAndDrop() {
-    if (dragTargetIndex != -1) {
-        SplitObject tempSourceSplitObject = splitList[dragSourceIndex];
-        if (tempSourceSplitObject.splitTimeStatus == SPLIT_STATUS_ACTIVE) {
-            tempSourceSplitObject.splitTimeStatus = SPLIT_STATUS_INACTIVE;
-        }
-        if (splitList[dragTargetIndex].splitTimeStatus == SPLIT_STATUS_ACTIVE) {
-            splitList[dragTargetIndex].splitTimeStatus = SPLIT_STATUS_INACTIVE;
-        }
-
-        splitList.erase(splitList.begin() + dragSourceIndex);
-        splitList.insert(splitList.begin() + dragTargetIndex, tempSourceSplitObject);
-        dragTargetIndex = -1;
-        dragSourceIndex = -1;
-
         TimeSplitsUpdateSplitStatus();
     }
 }
@@ -556,18 +305,6 @@ void TimeSplitsItemSplitEvent(uint32_t type, u8 item) {
         } else if (item == ITEM_STICKS_5 || item == ITEM_STICKS_10) {
             item = ITEM_STICK;
         }
-        if (item == ITEM_SKULL_TOKEN) {
-            auto it = std::find_if(splitList.begin(), splitList.end(), [item](const SplitObject& split) {
-                if (split.splitSkullTokenCount == gSaveContext.inventory.gsTokens) {
-                    return split.splitID == item;
-                } else {
-                    return split.splitID == ITEM_NONE;
-                }
-            });
-            if (it == splitList.end()) {
-                return;
-            }
-        }
     }
     if (type == SPLIT_TYPE_ENTRANCE) {
         if ((item == SCENE_ZORAS_RIVER && gSaveContext.entranceIndex == ENTR_ZORAS_RIVER_UNDERWATER_SHORTCUT) ||
@@ -579,7 +316,9 @@ void TimeSplitsItemSplitEvent(uint32_t type, u8 item) {
 
     for (auto& split : splitList) {
         if (split.splitType == type) {
-            if (item == split.splitID) {
+            if (item == split.splitID &&
+                (type != SPLIT_TYPE_QUEST || item != ITEM_SKULL_TOKEN ||
+                 split.splitSkullTokenCount == gSaveContext.inventory.gsTokens)) {
                 if (split.splitTimeStatus == SPLIT_STATUS_ACTIVE) {
                     split.splitTimeCurrent = GAMEPLAYSTAT_TOTAL_TIME;
                     split.splitTimeStatus = SPLIT_STATUS_COLLECTED;
@@ -639,8 +378,7 @@ void TimeSplitsSplitBestTimeDisplay(SplitObject split) {
 }
 
 void TimeSplitsDrawSplitsList() {
-    uint32_t dragIndex = 0;
-    ImGui::BeginChild("SplitTable", ImVec2(0.0f, ImGui::GetWindowHeight() - 128.0f));
+    ImGui::BeginChild("SplitTable");
     ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 0));
     if (ImGui::BeginTable("Splits", 5, ImGuiTableFlags_Hideable | ImGuiTableFlags_Reorderable)) {
         ImGui::TableSetupColumn("Item Image", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHeaderLabel,
@@ -649,9 +387,12 @@ void TimeSplitsDrawSplitsList() {
         ImGui::TableSetupColumn("Current Time");
         ImGui::TableSetupColumn("+/-");
         ImGui::TableSetupColumn("Prev. Best");
-        ImGui::TableHeadersRow();
+        ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
+        for (int column = 1; column < 5; ++column) {
+            if (ImGui::TableSetColumnIndex(column)) ImGui::TextUnformatted(ImGui::TableGetColumnName(column));
+        }
+        ImGui::TableSetColumnIndex(4);
 
-        SplitsPushImageButtonStyle();
         for (auto& split : splitList) {
             ImGui::TableNextColumn();
             TimeSplitsSplitBestTimeDisplay(split);
@@ -660,17 +401,8 @@ void TimeSplitsDrawSplitsList() {
             if (split.splitTimeStatus == SPLIT_STATUS_ACTIVE) {
                 ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, IM_COL32(47, 79, 90, 255));
             }
-            TimeSplitsGetImageSize(split.splitID);
-            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(imagePadding, imagePadding));
-            auto ret = ImGui::ImageButton(
-                split.splitImage.c_str(),
-                Ship::Context::GetInstance()->GetWindow()->GetGui()->GetTextureByName(split.splitImage), imageSize,
-                ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), split.splitTint);
-            ImGui::PopStyleVar();
-            if (ret) {
-                TimeSplitsSkipSplit(dragIndex);
-            }
-            HandleDragAndDrop(splitList, dragIndex, split.splitName);
+            ImGui::Image(Ship::Context::GetInstance()->GetWindow()->GetGui()->GetTextureByName(split.splitImage),
+                         ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), split.splitTint, ImVec4(0, 0, 0, 0));
             ImGui::TableNextColumn();
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 5.0f));
             ImGui::AlignTextToFramePadding();
@@ -693,11 +425,8 @@ void TimeSplitsDrawSplitsList() {
             ImGui::PopID();
             ImGui::PopStyleVar(1);
 
-            dragIndex++;
         }
-        SplitsPopImageButtonStyle();
 
-        TimeSplitsPostDragAndDrop();
 
         ImGui::EndTable();
     }
@@ -705,283 +434,326 @@ void TimeSplitsDrawSplitsList() {
     ImGui::EndChild();
 }
 
-void TimeSplitsGetTableSize(uint32_t type) {
-    switch (type) {
-        case SPLIT_TYPE_ITEM:
-        case SPLIT_TYPE_QUEST:
-            tableSize = 6;
-            break;
-        case SPLIT_TYPE_EQUIPMENT:
-            tableSize = 3;
-            break;
-        default:
-            tableSize = 2;
-            break;
-    }
+namespace {
+namespace N = NativeOptions;
+
+N::PagePtr SplitColumnsPage() {
+    return N::MakePage("splits/columns", N::Text("splits_columns"), [] {
+        const auto id = N::ChildTableId("Time Splits", "SplitTable", "Splits");
+        const auto columns = N::ReadTableLayout(id, 5);
+        const char* keys[] = {"splits_column_image", "splits_column_name", "splits_column_current",
+                              "splits_column_difference", "splits_column_best"};
+        std::vector<N::Row> rows;
+        for (int order = 0; order < 5; ++order) {
+            const auto it = std::find_if(columns.begin(), columns.end(), [=](auto c) { return c.order == order; });
+            const int index = static_cast<int>(it - columns.begin());
+            auto row = N::Toggle(std::to_string(index), N::Text(keys[index]), it->visible, [=](bool visible) {
+                auto next = N::ReadTableLayout(id, 5);
+                next[index].visible = visible;
+                if (!N::WriteTableLayout(id, next)) N::GetModel().Announce(N::Text("splits_column_required"));
+            }, N::Text("splits_columns_help"));
+            row.adjust = [=](int direction) {
+                auto next = N::ReadTableLayout(id, 5);
+                const int target = next[index].order + direction;
+                if (target < 0 || target >= 5) return;
+                const auto other = std::find_if(next.begin(), next.end(), [=](auto c) { return c.order == target; });
+                std::swap(next[index].order, other->order);
+                N::WriteTableLayout(id, next);
+            };
+            rows.push_back(std::move(row));
+        }
+        return rows;
+    });
 }
 
-void TimeSplitsDrawItemList(uint32_t type) {
-    TimeSplitsGetTableSize(type);
+json ReadSplitLists() {
+    const auto path = Ship::Context::GetPathRelativeToAppDirectory("timesplitdata.json");
+    if (!std::filesystem::exists(path)) return json::object();
+    std::ifstream input(path);
+    if (!input) throw std::runtime_error("Could not open time split lists");
+    json document;
+    input >> document;
+    if (!document.is_object()) throw std::runtime_error("Time split lists must be an object");
+    return document;
+}
 
-    ImGui::BeginChild("Item Child");
-    ImGui::BeginTable("Item List", tableSize);
-    for (size_t i = 0; i < tableSize; i++) {
-        if (i == 0) {
-            ImGui::TableSetupColumn("Item Image",
-                                    ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHeaderLabel, 39.0f);
-        } else {
-            if (type > SPLIT_TYPE_QUEST) {
-                ImGui::TableSetupColumn("Item Name");
-            } else {
-                ImGui::TableSetupColumn(std::to_string(i).c_str(),
-                                        ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHeaderLabel, 39.0f);
-            }
+void SplitFileError(const std::exception& error) {
+    SPDLOG_ERROR("Time split list operation failed: {}", error.what());
+    N::Message(N::Text("time_splits"), N::Text("splits_file_error") + "\n" + error.what());
+}
+
+void WriteSplitLists(const json& document) {
+    N::ReplaceFileWithBackup(Ship::Context::GetPathRelativeToAppDirectory("timesplitdata.json"), document.dump(4));
+}
+
+void SaveSplitList(const std::string& name) {
+    try {
+        auto document = ReadSplitLists();
+        auto list = json::array();
+        for (const auto& split : splitList) list.push_back(SplitObject_to_json(split));
+        document[name] = std::move(list);
+        WriteSplitLists(document);
+        N::Message(N::Text("time_splits"), N::Text("splits_saved") + " " + name);
+    } catch (const std::exception& error) { SplitFileError(error); }
+}
+
+void LoadSplitList(const std::string& name) {
+    try {
+        const auto document = ReadSplitLists();
+        const auto& list = document.at(name);
+        if (!list.is_array()) throw std::runtime_error("Invalid time split list");
+        std::vector<SplitObject> next;
+        for (const auto& entry : list) {
+            auto split = json_to_SplitObject(entry);
+            const auto known = std::find_if(splitObjectList.begin(), splitObjectList.end(), [&](const SplitObject& candidate) {
+                return candidate.splitID == split.splitID && candidate.splitType == split.splitType;
+            });
+            if (known == splitObjectList.end() || split.splitSkullTokenCount > 100)
+                throw std::runtime_error("Invalid split type, item, or token count");
+            // Use the current resource definition; saved files own the times and token target.
+            split.splitImage = known->splitImage;
+            split.splitTint = known->splitTint;
+            split.splitName = known->splitName;
+            if (split.splitID == ITEM_SKULL_TOKEN && split.splitType == SPLIT_TYPE_QUEST)
+                split.splitName += " (" + std::to_string(split.splitSkullTokenCount) + ")";
+            split.splitTimeStatus = SPLIT_STATUS_INACTIVE;
+            next.push_back(std::move(split));
         }
-    }
+        if (!next.empty()) next.front().splitTimeStatus = SPLIT_STATUS_ACTIVE;
+        splitList = std::move(next);
+        N::Message(N::Text("time_splits"), N::Text("splits_loaded") + " " + name);
+    } catch (const std::exception& error) { SplitFileError(error); }
+}
 
-    for (auto& split : splitObjectList) {
-        if (split.splitType == type) {
-            ImGui::TableNextColumn();
-            ImGui::PushID(split.splitID);
-            TimeSplitsGetImageSize(split.splitID);
-            SplitsPushImageButtonStyle();
-            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(imagePadding, imagePadding));
-            auto ret = ImGui::ImageButton(
-                split.splitImage.c_str(),
-                Ship::Context::GetInstance()->GetWindow()->GetGui()->GetTextureByName(split.splitImage), imageSize,
-                ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), split.splitTint);
-            ImGui::PopStyleVar();
-            if (ret) {
-                if (popupList.contains(split.splitID) && (split.splitType < SPLIT_TYPE_BOSS)) {
-                    popupID = split.splitID;
-                    ImGui::OpenPopup("TimeSplitsPopUp");
+void AddSplit(SplitObject split) {
+    split.splitTimeStatus = splitList.empty() ? SPLIT_STATUS_ACTIVE : SPLIT_STATUS_INACTIVE;
+    splitList.push_back(std::move(split));
+    N::GetModel().Announce(N::Text("splits_added") + " " + splitList.back().splitName);
+}
+
+N::PagePtr AddSplitPage(uint32_t type, const std::string& title) {
+    return N::MakePage("splits/add/" + std::to_string(type), title, [=] {
+        std::vector<N::Row> rows;
+        for (const auto& split : splitObjectList) {
+            if (split.splitType != type) continue;
+            rows.push_back(N::Action(std::to_string(split.splitID), split.splitName, [split] {
+                if (split.splitID == ITEM_SKULL_TOKEN && split.splitType == SPLIT_TYPE_QUEST) {
+                    auto count = std::make_shared<int>(0);
+                    N::GetModel().Push(N::MakePage("splits/tokens", split.splitName, [=] {
+                        return std::vector<N::Row>{
+                            N::Integer("count", N::Text("splits_tokens"), *count, 0, 100, 1, [=](int value) { *count = value; }),
+                            N::Action("add", N::Text("splits_set_tokens"), [=] {
+                                auto copy = split;
+                                copy.splitSkullTokenCount = *count;
+                                copy.splitName += " (" + std::to_string(*count) + ")";
+                                N::GetModel().Back();
+                                AddSplit(copy);
+                            })
+                        };
+                    }));
+                } else if (split.splitType < SPLIT_TYPE_BOSS && popupList.contains(split.splitID)) {
+                    const auto variants = popupList.at(split.splitID);
+                    N::GetModel().Push(N::MakePage("splits/variant", split.splitName, [=] {
+                        std::vector<N::Row> choices;
+                        for (auto id : variants) {
+                            const auto found = std::find_if(splitObjectList.begin(), splitObjectList.end(),
+                                                           [=](const SplitObject& candidate) { return candidate.splitID == id; });
+                            if (found == splitObjectList.end()) continue;
+                            const auto item = *found;
+                            choices.push_back(N::Action(std::to_string(id), item.splitName, [=] {
+                                N::GetModel().Back();
+                                AddSplit(item);
+                            }));
+                        }
+                        return choices;
+                    }));
                 } else {
-                    splitList.push_back(split);
+                    AddSplit(split);
+                }
+            }));
+        }
+        return rows;
+    });
+}
 
-                    if (splitList.size() == 1) {
-                        splitList[0].splitTimeStatus = SPLIT_STATUS_ACTIVE;
-                    } else {
-                        splitList[splitList.size() - 1].splitTimeStatus = SPLIT_STATUS_INACTIVE;
+N::PagePtr ManageSplitPage(size_t index) {
+    auto position = std::make_shared<size_t>(index);
+    return N::MakePage("splits/manage/" + std::to_string(index), splitList[index].splitName, [=] {
+        if (*position >= splitList.size()) return std::vector<N::Row>{};
+        const auto& split = splitList[*position];
+        auto status = N::Action("status", N::Text("splits_status"), [] { N::ReadCurrentDescription(); });
+        const char* statuses[] = {"splits_active", "splits_inactive", "splits_collected", "splits_skipped"};
+        status.value = split.splitTimeStatus <= SPLIT_STATUS_SKIPPED ? N::Text(statuses[split.splitTimeStatus]) : "";
+        status.description = N::Text("splits_current_time") + ": " +
+            formatTimestampTimeSplit(split.splitTimeStatus == SPLIT_STATUS_ACTIVE ? GAMEPLAYSTAT_TOTAL_TIME : split.splitTimeCurrent) +
+            "\n" + N::Text("splits_best") + ": " + formatTimestampTimeSplit(split.splitTimeBest) +
+            "\n" + N::Text("splits_previous_best") + ": " + formatTimestampTimeSplit(split.splitTimePreviousBest);
+        auto move = [=](int direction) {
+            const size_t next = direction < 0 ? *position - 1 : *position + 1;
+            if (next >= splitList.size()) return;
+            std::swap(splitList[*position], splitList[next]);
+            *position = next;
+            // The first unfinished split becomes active after a reorder, matching the original editor.
+            for (auto& entry : splitList)
+                if (entry.splitTimeStatus == SPLIT_STATUS_ACTIVE) entry.splitTimeStatus = SPLIT_STATUS_INACTIVE;
+            TimeSplitsUpdateSplitStatus();
+        };
+        auto up = N::Action("up", N::Text("move_up"), [=] { move(-1); });
+        up.enabled = *position > 0;
+        auto down = N::Action("down", N::Text("move_down"), [=] { move(1); });
+        down.enabled = *position + 1 < splitList.size();
+        auto skip = N::Action("skip", N::Text("splits_skip"), [=] { TimeSplitsSkipSplit(static_cast<uint32_t>(*position)); });
+        skip.enabled = GameInteractor::IsSaveLoaded();
+        if (!skip.enabled) skip.disabledReason = N::Text("save_required");
+        return std::vector<N::Row>{status, up, down, skip,
+            N::Action("remove", N::Text("remove"), [=] {
+                N::Confirm(N::Text("remove"), split.splitName, N::Text("remove"), [=] {
+                    splitList.erase(splitList.begin() + *position);
+                    TimeSplitsUpdateSplitStatus();
+                    N::GetModel().Back();
+                });
+            })
+        };
+    });
+}
+
+N::PagePtr SplitsPage() {
+    return N::MakePage("splits/current", N::Text("splits_current"), [] {
+        std::vector<N::Row> rows;
+        for (size_t index = 0; index < splitList.size(); ++index) {
+            auto row = N::Link(std::to_string(index), splitList[index].splitName, [=] { return ManageSplitPage(index); });
+            row.value = formatTimestampTimeSplit(splitList[index].splitTimeCurrent);
+            rows.push_back(row);
+        }
+        return rows;
+    });
+}
+
+N::PagePtr SavedSplitsPage() {
+    auto names = std::make_shared<std::vector<std::string>>();
+    auto failure = std::make_shared<std::string>();
+    auto refresh = [=] {
+        names->clear();
+        failure->clear();
+        try {
+            const auto document = ReadSplitLists();
+            for (const auto& entry : document.items()) names->push_back(entry.key());
+        } catch (const std::exception& error) {
+            SPDLOG_ERROR("Time split list operation failed: {}", error.what());
+            *failure = N::Text("splits_file_error") + "\n" + error.what();
+        }
+    };
+    refresh();
+    return N::MakePage("splits/files", N::Text("splits_lists"), [=] {
+        std::vector<N::Row> rows{N::Action("refresh", N::Text("refresh"), refresh)};
+        if (!failure->empty())
+            rows.push_back(N::Action("error", N::Text("splits_file_error"), [] { N::ReadCurrentDescription(); }, *failure));
+        rows.push_back(N::String("create", N::Text("splits_create"), "", [=](std::string name) {
+            try {
+                if (ReadSplitLists().contains(name))
+                    N::Confirm(N::Text("splits_save"), N::Text("splits_replace") + " " + name, N::Text("save"),
+                               [=] { SaveSplitList(name); refresh(); });
+                else { SaveSplitList(name); refresh(); }
+            } catch (const std::exception& error) { SplitFileError(error); }
+        }, N::Text("splits_create_description"), 24, [](const std::string& name) {
+            return name.find_first_not_of(" \t\r\n") == std::string::npos ? N::Text("name_required") : "";
+        }));
+        for (const auto& name : *names) {
+            rows.push_back(N::Link(name, name, [=] {
+                return N::MakePage("splits/file/" + name, name, [=] {
+                    return std::vector<N::Row>{
+                        N::Action("load", N::Text("splits_load"), [=] {
+                            N::Confirm(N::Text("splits_load"), N::Text("splits_load_description"), N::Text("load"),
+                                       [=] { LoadSplitList(name); });
+                        }),
+                        N::Action("save", N::Text("splits_save"), [=] { SaveSplitList(name); }),
+                        N::Action("delete", N::Text("splits_delete"), [=] {
+                            N::Confirm(N::Text("splits_delete"), name, N::Text("delete"), [=] {
+                                try {
+                                    auto document = ReadSplitLists();
+                                    document.erase(name);
+                                    WriteSplitLists(document);
+                                    N::GetModel().Back();
+                                    refresh();
+                                } catch (const std::exception& error) { SplitFileError(error); }
+                            });
+                        })
+                    };
+                });
+            }));
+        }
+        return rows;
+    });
+}
+
+N::PagePtr TimeSplitsPage() {
+    return N::MakePage("splits", N::Text("time_splits"), [] {
+        return std::vector<N::Row>{
+            N::CVarToggle(N::Text("splits_overlay"), CVAR_WINDOW("TimeSplits")),
+            N::Link("current", N::Text("splits_current"), SplitsPage),
+            N::Link("add", N::Text("splits_add"), [] {
+                return N::MakePage("splits/add", N::Text("splits_add"), [] {
+                    std::vector<N::Row> rows;
+                    for (const auto& [type, key] : {
+                            std::pair{SPLIT_TYPE_EQUIPMENT, "tracker_equipment"}, {SPLIT_TYPE_ITEM, "tracker_inventory"},
+                            {SPLIT_TYPE_QUEST, "splits_quest"}, {SPLIT_TYPE_ENTRANCE, "splits_entrances"},
+                            {SPLIT_TYPE_BOSS, "splits_bosses"}, {SPLIT_TYPE_MISC, "splits_misc"} }) {
+                        const auto title = N::Text(key);
+                        rows.push_back(N::Link(key, title, [=] { return AddSplitPage(type, title); }));
                     }
-                }
-            }
-            SplitsPopImageButtonStyle();
-
-            TimeSplitsPopUpContext();
-            ImGui::PopID();
-
-            if (type > SPLIT_TYPE_QUEST) {
-                ImGui::TableNextColumn();
-                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 7.0f));
-                ImGui::AlignTextToFramePadding();
-                ImGui::Text("%s", split.splitName.c_str());
-                ImGui::PopStyleVar(1);
-            }
-        }
-    }
-    ImGui::EndTable();
-    ImGui::EndChild();
+                    return rows;
+                });
+            }),
+            N::Link("files", N::Text("splits_lists"), SavedSplitsPage),
+            N::Action("attempt", N::Text("splits_attempt"), [] {
+                N::Confirm(N::Text("splits_attempt"), N::Text("splits_attempt_description"), N::Text("confirm"), [] {
+                    for (auto& split : splitList) {
+                        split.splitTimeStatus = SPLIT_STATUS_INACTIVE;
+                        split.splitTimeCurrent = 0;
+                    }
+                    if (!splitList.empty()) splitList.front().splitTimeStatus = SPLIT_STATUS_ACTIVE;
+                });
+            }),
+            N::Action("update", N::Text("splits_update"), [] {
+                for (auto& split : splitList)
+                    if (split.splitTimeBest != 0 && (split.splitTimePreviousBest == 0 || split.splitTimeBest < split.splitTimePreviousBest))
+                        split.splitTimePreviousBest = split.splitTimeBest;
+                N::GetModel().Announce(N::Text("splits_updated"));
+            }),
+            N::Link("window", N::Text("splits_window"), [] {
+                return N::MakePage("splits/window", N::Text("splits_window"), [] {
+                    return std::vector<N::Row>{
+                        N::OverlayLayout("Time Splits", true, 450, 660),
+                        N::Link("columns", N::Text("splits_columns"), SplitColumnsPage),
+                        N::CVarColor(N::Text("background_color"), CVAR_ENHANCEMENT("TimeSplits.WindowColor"), {0, 0, 0, 255}),
+                        N::CVarDecimal(N::Text("splits_scale"), CVAR_ENHANCEMENT("TimeSplits.WindowScale"), 1, 1, 3, 0.1f)
+                    };
+                });
+            })
+        };
+    });
 }
-
-void TimeSplitsUpdateWindowSize() {
-    timeSplitsWindowSize = CVarGetFloat(CVAR_ENHANCEMENT("TimeSplits.WindowScale"), 0);
-    if (timeSplitsWindowSize < 1.0f) {
-        timeSplitsWindowSize = 1.0f;
-    }
-}
-
-void TimeSplitsDrawOptionsMenu() {
-    ImGui::SeparatorText("Window Options");
-    Color_RGBA8 defaultColor = { 0, 0, 0, 255 };
-    if (CVarColorPicker("Background Color", CVAR_ENHANCEMENT("TimeSplits.WindowColor"), defaultColor, true, 0,
-                        THEME_COLOR)) {
-        windowColor = VecFromRGBA8(CVarGetColor(CVAR_ENHANCEMENT("TimeSplits.WindowColor.Value"), defaultColor));
-    }
-
-    if (CVarSliderFloat("Window Scale", CVAR_ENHANCEMENT("TimeSplits.WindowScale"),
-                        FloatSliderOptions()
-                            .Min(1.0f)
-                            .Max(3.0f)
-                            .DefaultValue(1.0f)
-                            .Format("%.1fx")
-                            .Size({ 300.0f, 0.0f })
-                            .Step(0.1f)
-                            .Color(THEME_COLOR))) {
-        TimeSplitsUpdateWindowSize();
-    }
-
-    ImGui::SeparatorText("Split List Management");
-
-    ImGui::Text("New List Name: ");
-    ImGui::PushItemWidth(150.0f);
-    PushStyleInput(THEME_COLOR);
-    ImGui::InputText("##listName", listNameBuf, 25);
-    PopStyleInput();
-    ImGui::PopItemWidth();
-    ImGui::SameLine();
-    if (Button("Create List", ButtonOptions().Color(THEME_COLOR).Size(Sizes::Inline))) {
-        TimeSplitsFileManagement(SPLIT_ACTION_SAVE, listNameBuf, splitList);
-    }
-    UIWidgets::PaddedSeparator();
-
-    TimeSplitsFileManagement(SPLIT_ACTION_COLLECT, "", emptyList);
-    static uint32_t selectedItem = 0;
-    ImGui::Text("Select List to Load: ");
-    ImGui::PushItemWidth(150.0f);
-    Combobox("", &selectedItem, keys, ComboboxOptions().Color(THEME_COLOR).LabelPosition(LabelPositions::Near));
-    ImGui::PopItemWidth();
-    ImGui::SameLine();
-    if (Button("Load List", ButtonOptions().Color(THEME_COLOR).Size(Sizes::Inline))) {
-        TimeSplitsFileManagement(SPLIT_ACTION_LOAD, keys[selectedItem].c_str(), emptyList);
-    }
-    ImGui::SameLine();
-    if (Button("Save List", ButtonOptions().Color(THEME_COLOR).Size(Sizes::Inline))) {
-        TimeSplitsFileManagement(SPLIT_ACTION_SAVE, keys[selectedItem].c_str(), splitList);
-    }
-    ImGui::SameLine();
-    if (Button("Delete List", ButtonOptions().Color(THEME_COLOR).Size(Sizes::Inline))) {
-        TimeSplitsFileManagement(SPLIT_ACTION_DELETE, keys[selectedItem].c_str(), emptyList);
-    }
-    UIWidgets::Separator(true, true, ImGui::GetStyle().ItemSpacing.y, ImGui::GetStyle().ItemSpacing.y);
-
-    if (Button("New Attempt", ButtonOptions().Color(THEME_COLOR).Size(Sizes::Inline))) {
-        for (auto& data : splitList) {
-            data.splitTimeStatus = SPLIT_STATUS_INACTIVE;
-        }
-        splitList[0].splitTimeStatus = SPLIT_STATUS_ACTIVE;
-    }
-    ImGui::SameLine();
-    if (Button("Update Splits", ButtonOptions().Color(THEME_COLOR).Size(Sizes::Inline))) {
-        TimeSplitsFileManagement(SPLIT_ACTION_UPDATE, keys[selectedItem].c_str(), splitList);
-    }
-}
-
-void TimeSplitsRemoveSplitEntry(uint32_t index) {
-    if (removeIndex != -1) {
-        splitList.erase(splitList.begin() + index);
-        removeIndex = -1;
-    }
-}
-
-void TimeSplitsDrawManageList() {
-    uint32_t index = 0;
-    ImGui::BeginChild("SplitTable", ImVec2(0.0f, ImGui::GetWindowHeight() - 128.0f));
-    ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 0));
-    if (ImGui::BeginTable("List Management", 2, ImGuiTableFlags_BordersInnerV)) {
-        ImGui::TableSetupColumn("Preview", ImGuiTableColumnFlags_WidthFixed, 120.0f);
-        ImGui::TableSetupColumn("Options", ImGuiTableColumnFlags_NoHeaderLabel);
-
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 1.0f, 1.0f, 0.0f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 1.0f, 1.0f, 0.2f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 1.0f, 1.0f, 0.1f));
-
-        ImGui::TableNextColumn();
-        ImGui::BeginTabBar("List Preview");
-        if (ImGui::BeginTabItem("Preview")) {
-            ImGui::BeginChild("PreviewChild");
-            for (auto& data : splitList) {
-                float availableWidth = ImGui::GetContentRegionAvail().x;
-                float imageWidth = 38.0f;                             // Width of your image button
-                float offsetX = (availableWidth - imageWidth) * 0.5f; // Centering offset
-
-                if (offsetX > 0.0f) {
-                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX); // Apply the offset to center
-                }
-                TimeSplitsGetImageSize(data.splitID);
-                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(imagePadding, imagePadding));
-                auto ret = ImGui::ImageButton(
-                    data.splitImage.c_str(),
-                    Ship::Context::GetInstance()->GetWindow()->GetGui()->GetTextureByName(data.splitImage), imageSize,
-                    ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), data.splitTint);
-                ImGui::PopStyleVar();
-                if (ret) {
-                    removeIndex = index;
-                }
-                HandleDragAndDrop(splitList, index, splitList[index].splitName);
-                index++;
-            }
-            TimeSplitsRemoveSplitEntry(removeIndex);
-            ImGui::EndChild();
-            ImGui::EndTabItem();
-        }
-        ImGui::EndTabBar();
-
-        ImGui::PopStyleColor(3);
-        ImGui::TableNextColumn();
-        ImGui::BeginTabBar("List Options");
-        if (ImGui::BeginTabItem("Equipment")) {
-            TimeSplitsDrawItemList(SPLIT_TYPE_EQUIPMENT);
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Inventory")) {
-            TimeSplitsDrawItemList(SPLIT_TYPE_ITEM);
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Quest")) {
-            TimeSplitsDrawItemList(SPLIT_TYPE_QUEST);
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Entrances")) {
-            TimeSplitsDrawItemList(SPLIT_TYPE_ENTRANCE);
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Bosses")) {
-            TimeSplitsDrawItemList(SPLIT_TYPE_BOSS);
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Miscellaneous")) {
-            TimeSplitsDrawItemList(SPLIT_TYPE_MISC);
-            ImGui::EndTabItem();
-        }
-
-        TimeSplitsPostDragAndDrop();
-
-        ImGui::EndTabBar();
-        ImGui::EndTable();
-    }
-    ImGui::PopStyleVar();
-    ImGui::EndChild();
-}
+} // namespace
 
 void TimeSplitWindow::Draw() {
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, windowColor);
+    const Color_RGBA8 color = CVarGetColor(CVAR_ENHANCEMENT("TimeSplits.WindowColor.Value"), {0, 0, 0, 255});
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, VecFromRGBA8(color));
     GuiWindow::Draw();
     ImGui::PopStyleColor();
 }
 
-static bool initialized = false;
-
 void TimeSplitWindow::DrawElement() {
-    ImGui::SetWindowFontScale(timeSplitsWindowSize);
-
-    PushStyleTabs(THEME_COLOR);
-    if (ImGui::BeginTabBar("Split Tabs")) {
-        if (ImGui::BeginTabItem("Splits")) {
-            TimeSplitsDrawSplitsList();
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Manage List")) {
-            TimeSplitsDrawManageList();
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Options")) {
-            TimeSplitsDrawOptionsMenu();
-            ImGui::EndTabItem();
-        }
-        ImGui::EndTabBar();
-    }
-    PopStyleTabs();
+    ImGui::SetWindowFontScale(CVarGetFloat(CVAR_ENHANCEMENT("TimeSplits.WindowScale"), 1.0f));
+    TimeSplitsDrawSplitsList();
 }
 
 void TimeSplitWindow::InitElement() {
-    TimeSplitsUpdateWindowSize();
+    NativeOptions::RegisterPage("Time Splits", TimeSplitsPage);
 
     Ship::Context::GetInstance()->GetWindow()->GetGui()->LoadGuiTexture("SPECIAL_TRIFORCE_PIECE_WHITE",
                                                                         gWTriforcePieceTex, ImVec4(1, 1, 1, 1));
     Ship::Context::GetInstance()->GetWindow()->GetGui()->LoadGuiTexture("SPECIAL_SPLIT_ENTRANCE", gSplitEntranceTex,
                                                                         ImVec4(1, 1, 1, 1));
-    Color_RGBA8 defaultColour = { 0, 0, 0, 255 };
-    windowColor = VecFromRGBA8(CVarGetColor(CVAR_ENHANCEMENT("TimeSplits.WindowColor.Value"), defaultColour));
 
     GameInteractor::Instance->RegisterGameHook<GameInteractor::OnTimestamp>([](u8 item) {
         if (item != ITEM_SKULL_TOKEN) {

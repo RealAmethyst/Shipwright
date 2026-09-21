@@ -65,6 +65,10 @@ DEFINE_HOOK(OnInterfaceUpdate, ());
 DEFINE_HOOK(OnKaleidoscopeUpdate, (int16_t inDungeonScene));
 
 DEFINE_HOOK(OnPresentFileSelect, ());
+DEFINE_HOOK(OnFileSelectUpdate, (void* fileChoose));
+DEFINE_HOOK(OnFileSelectClose, ());
+DEFINE_HOOK(OnBootLogo, (uint8_t logo));
+DEFINE_HOOK(OnTitleScreen, (bool masterQuest, const char* prompt));
 DEFINE_HOOK(OnUpdateFileSelectSelection, (uint16_t optionIndex));
 DEFINE_HOOK(OnUpdateFileSelectConfirmationSelection, (uint16_t optionIndex));
 DEFINE_HOOK(OnUpdateFileCopySelection, (uint16_t optionIndex));

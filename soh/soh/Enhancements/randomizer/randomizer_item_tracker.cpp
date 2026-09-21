@@ -8,6 +8,7 @@
 
 #include "randomizer_check_tracker.h"
 #include "randomizer_item_tracker.h"
+#include "soh/NativeOptions/OptionsTrackers.h"
 #include "randomizerTypes.h"
 #include "soh/cvar_prefixes.h"
 #include "soh/Enhancements/game-interactor/GameInteractor.h"
@@ -44,8 +45,6 @@ std::vector<ItemTrackerItem> mainWindowItems = {};
 
 static WidgetInfo backgroundColor;
 static WidgetInfo windowTypeWidget;
-static WidgetInfo enableDraggingWidget;
-static WidgetInfo onlyPausedWidget;
 static WidgetInfo ammoTracking;
 static WidgetInfo keyTracking;
 static WidgetInfo triforcePieceCount;
@@ -455,19 +454,6 @@ struct ItemTrackerNumbers {
 };
 
 static ImVector<char> itemTrackerNotes;
-uint32_t notesIdleFrames = 0;
-bool notesNeedSave = false;
-const uint32_t notesMaxIdleFrames = 40; // two seconds of game time, since OnGameFrameUpdate is used to tick
-
-static bool presetLoaded = false;
-static std::unordered_map<std::string, ImVec2> presetPos;
-static std::unordered_map<std::string, ImVec2> presetSize;
-
-void ItemTrackerOnFrame() {
-    if (notesNeedSave && notesIdleFrames <= notesMaxIdleFrames) {
-        notesIdleFrames++;
-    }
-}
 
 bool IsValidSaveFile() {
     bool validSave = gSaveContext.fileNum >= 0 && gSaveContext.fileNum <= 2;
@@ -487,11 +473,11 @@ bool HasEquipment(ItemTrackerItem item) {
 }
 
 void ItemTracker_LoadFromPreset(nlohmann::json trackerInfo) {
-    presetLoaded = true;
+    shouldUpdateVectors = true;
     for (auto window : itemTrackerWindowIDs) {
         if (trackerInfo.contains(window)) {
-            presetPos[window] = { trackerInfo[window]["pos"]["x"], trackerInfo[window]["pos"]["y"] };
-            presetSize[window] = { trackerInfo[window]["size"]["width"], trackerInfo[window]["size"]["height"] };
+            NativeOptions::ApplyOverlayPreset(window, trackerInfo[window]["pos"]["x"], trackerInfo[window]["pos"]["y"],
+                                              trackerInfo[window]["size"]["width"], trackerInfo[window]["size"]["height"]);
         }
     }
 }
@@ -1374,43 +1360,17 @@ void DrawSong(ItemTrackerItem item) {
 }
 
 void DrawNotes(bool resizeable = false) {
+    if (!GameInteractor::IsSaveLoaded() || itemTrackerNotes.empty()) return;
     ImGui::BeginGroup();
-    float iconSize = static_cast<float>(CVarGetInteger(CVAR_TRACKER_ITEM("IconSize"), 36));
-    int iconSpacing = CVarGetInteger(CVAR_TRACKER_ITEM("IconSpacing"), 12);
-
-    struct ItemTrackerNotes {
-        static int TrackerNotesResizeCallback(ImGuiInputTextCallbackData* data) {
-            if (data->EventFlag == ImGuiInputTextFlags_CallbackResize) {
-                ImVector<char>* itemTrackerNotes = (ImVector<char>*)data->UserData;
-                IM_ASSERT(itemTrackerNotes->begin() == data->Buf);
-                itemTrackerNotes->resize(
-                    data->BufSize); // NB: On resizing calls, generally data->BufSize == data->BufTextLen + 1
-                data->Buf = itemTrackerNotes->begin();
-            }
-            return 0;
-        }
-        static bool TrackerNotesInputTextMultiline(const char* label, ImVector<char>* itemTrackerNotes,
-                                                   const ImVec2& size = ImVec2(0, 0), ImGuiInputTextFlags flags = 0) {
-            IM_ASSERT((flags & ImGuiInputTextFlags_CallbackResize) == 0);
-            return ImGui::InputTextMultiline(label, itemTrackerNotes->begin(), (size_t)itemTrackerNotes->size(), size,
-                                             flags | ImGuiInputTextFlags_CallbackResize,
-                                             ItemTrackerNotes::TrackerNotesResizeCallback, (void*)itemTrackerNotes);
-        }
-    };
-    ImVec2 size = resizeable ? ImVec2(-FLT_MIN, ImGui::GetContentRegionAvail().y)
-                             : ImVec2(((iconSize + iconSpacing) * 6) - 8.0f, 200.0f);
-    if (GameInteractor::IsSaveLoaded()) {
-        if (ItemTrackerNotes::TrackerNotesInputTextMultiline("##ItemTrackerNotes", &itemTrackerNotes, size,
-                                                             ImGuiInputTextFlags_AllowTabInput)) {
-            notesNeedSave = true;
-            notesIdleFrames = 0;
-        }
-        if ((ImGui::IsItemDeactivatedAfterEdit() || (notesNeedSave && notesIdleFrames > notesMaxIdleFrames)) &&
-            IsValidSaveFile()) {
-            notesNeedSave = false;
-            SaveManager::Instance->SaveSection(gSaveContext.fileNum, itemTrackerSectionId, true);
-        }
+    if (!resizeable) {
+        const float iconSize = CVarGetInteger(CVAR_TRACKER_ITEM("IconSize"), 36);
+        const int iconSpacing = CVarGetInteger(CVAR_TRACKER_ITEM("IconSpacing"), 12);
+        ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + ((iconSize + iconSpacing) * 6) - 8.0f);
+    } else {
+        ImGui::PushTextWrapPos();
     }
+    ImGui::TextWrapped("%s", itemTrackerNotes.Data);
+    ImGui::PopTextWrapPos();
     ImGui::EndGroup();
 }
 
@@ -1456,12 +1416,6 @@ void BeginFloatingWindows(std::string UniqueName, ImGuiWindowFlags flags = 0) {
     ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
     ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
-    if (presetLoaded && presetPos.contains(UniqueName)) {
-        ImGui::SetNextWindowSize(presetSize[UniqueName]);
-        ImGui::SetNextWindowPos(presetPos[UniqueName]);
-        presetSize.erase(UniqueName);
-        presetPos.erase(UniqueName);
-    }
     ImGui::Begin(UniqueName.c_str(), nullptr, windowFlags);
 }
 void EndFloatingWindows() {
@@ -1825,8 +1779,8 @@ void ItemTrackerWindow::DrawElement() {
 
     int iconSize = CVarGetInteger(CVAR_TRACKER_ITEM("IconSize"), 36);
     int iconSpacing = CVarGetInteger(CVAR_TRACKER_ITEM("IconSpacing"), 12);
-    int comboButton1Mask = buttonMap[CVarGetInteger(CVAR_TRACKER_ITEM("ComboButton1"), TRACKER_COMBO_BUTTON_L)];
-    int comboButton2Mask = buttonMap[CVarGetInteger(CVAR_TRACKER_ITEM("ComboButton2"), TRACKER_COMBO_BUTTON_R)];
+    int comboButton1Mask = ::buttonMap[CVarGetInteger(CVAR_TRACKER_ITEM("ComboButton1"), TRACKER_COMBO_BUTTON_L)];
+    int comboButton2Mask = ::buttonMap[CVarGetInteger(CVAR_TRACKER_ITEM("ComboButton2"), TRACKER_COMBO_BUTTON_R)];
     OSContPad* buttonsPressed =
         std::dynamic_pointer_cast<LUS::ControlDeck>(Ship::Context::GetInstance()->GetControlDeck())->GetPads();
     bool comboButtonsHeld = buttonsPressed != nullptr && buttonsPressed[0].button & comboButton1Mask &&
@@ -2004,10 +1958,6 @@ void ItemTrackerWindow::DrawElement() {
             EndFloatingWindows();
         }
     }
-    if (presetLoaded) {
-        shouldUpdateVectors = true;
-        presetLoaded = false;
-    }
 }
 
 static std::map<int32_t, const char*> itemTrackerCapacityTrackOptions = {
@@ -2040,166 +1990,82 @@ static std::map<int32_t, const char*> extendedDisplayTypes = {
 static std::map<int32_t, const char*> minimalDisplayTypes = { { SECTION_DISPLAY_MINIMAL_HIDDEN, "Hidden" },
                                                               { SECTION_DISPLAY_MINIMAL_SEPARATE, "Separate" } };
 
-void ItemTrackerSettingsWindow::DrawElement() {
-    ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, { 8.0f, 8.0f });
-    if (ImGui::BeginTable("itemTrackerSettingsTable", 2, ImGuiTableFlags_BordersH | ImGuiTableFlags_BordersV)) {
-        ImGui::TableSetupColumn("General settings", ImGuiTableColumnFlags_WidthStretch, 200.0f);
-        ImGui::TableSetupColumn("Section settings", ImGuiTableColumnFlags_WidthStretch, 200.0f);
-        ImGui::TableHeadersRow();
-        ImGui::TableNextRow();
-        ImGui::TableNextColumn();
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-        SohGui::mSohMenu->MenuDrawItem(backgroundColor, 250, THEME_COLOR);
-        ImGui::PopItemWidth();
-        SohGui::mSohMenu->MenuDrawItem(windowTypeWidget, 250, THEME_COLOR);
-
-        if (CVarGetInteger(CVAR_TRACKER_ITEM("WindowType"), TRACKER_WINDOW_FLOATING) == TRACKER_WINDOW_FLOATING) {
-            if (CVarCheckbox("Enable Dragging", CVAR_TRACKER_ITEM("Draggable"), CheckboxOptions().Color(THEME_COLOR))) {
-                shouldUpdateVectors = true;
-            }
-            if (CVarCheckbox("Only Enable While Paused", CVAR_TRACKER_ITEM("ShowOnlyPaused"),
-                             CheckboxOptions().Color(THEME_COLOR))) {
-                shouldUpdateVectors = true;
-            }
-            if (CVarCombobox("Display Mode", CVAR_TRACKER_ITEM("DisplayType.Main"), showMode,
-                             ComboboxOptions()
-                                 .DefaultIndex(TRACKER_DISPLAY_ALWAYS)
-                                 .ComponentAlignment(ComponentAlignments::Right)
-                                 .LabelPosition(LabelPositions::Far)
-                                 .Color(THEME_COLOR))) {
-                shouldUpdateVectors = true;
-            }
-            if (CVarGetInteger(CVAR_TRACKER_ITEM("DisplayType.Main"), TRACKER_DISPLAY_ALWAYS) ==
-                TRACKER_DISPLAY_COMBO_BUTTON) {
-                if (CVarCombobox("Combo Button 1", CVAR_TRACKER_ITEM("ComboButton1"), buttonStrings,
-                                 ComboboxOptions()
-                                     .DefaultIndex(TRACKER_COMBO_BUTTON_L)
-                                     .ComponentAlignment(ComponentAlignments::Right)
-                                     .LabelPosition(LabelPositions::Far)
-                                     .Color(THEME_COLOR))) {
-                    shouldUpdateVectors = true;
+static NativeOptions::PagePtr ItemTrackerSettingsPage() {
+    namespace N = NativeOptions;
+    return N::MakePage("tracker/item", N::Text("item_tracker_settings"), [] {
+        std::vector<N::Row> rows;
+        rows.push_back(N::Link("general", N::Text("general_settings"), [] {
+            return N::MakePage("tracker/item/general", N::Text("general_settings"), [] {
+                std::vector<N::Row> result;
+                for (auto* widget : { &backgroundColor, &windowTypeWidget })
+                    N::AppendWidget(result, *widget, widget->cVar);
+                auto refresh = [] { shouldUpdateVectors = true; };
+                N::AppendTrackerDisplayRows(result, CVAR_TRACKER_ITEM(""), TRACKER_WINDOW_FLOATING, "DisplayType.Main",
+                                            N::TrackerChoices(showMode), N::TrackerChoices(buttonStrings), refresh);
+                result.push_back(N::CVarInteger(N::Text("tracker_icon_size"), CVAR_TRACKER_ITEM("IconSize"), 36, 25, 128));
+                result.push_back(N::CVarInteger(N::Text("tracker_icon_spacing"), CVAR_TRACKER_ITEM("IconSpacing"), 12, -5, 50));
+                result.push_back(N::CVarInteger(N::Text("tracker_text_size"), CVAR_TRACKER_ITEM("TextSize"), 13, 1, 30));
+                N::AppendWidget(result, ammoTracking, ammoTracking.cVar);
+                const auto counts = CVarGetInteger(CVAR_TRACKER_ITEM("ItemCountType"), ITEM_TRACKER_NUMBER_CURRENT_CAPACITY_ONLY);
+                if (counts == ITEM_TRACKER_NUMBER_CURRENT_CAPACITY_ONLY || counts == ITEM_TRACKER_NUMBER_CURRENT_AMMO_ONLY)
+                    result.push_back(N::CVarToggle(N::Text("tracker_align_left"), CVAR_TRACKER_ITEM("ItemCountAlignLeft"), false, "", refresh));
+                for (auto* widget : { &keyTracking, &triforcePieceCount, &hookshotIdentWidget })
+                    N::AppendWidget(result, *widget, widget->cVar);
+                return result;
+            });
+        }));
+        rows.push_back(N::Link("sections", N::Text("section_settings"), [] {
+            return N::MakePage("tracker/item/sections", N::Text("section_settings"), [] {
+                auto refresh = [] { shouldUpdateVectors = true; };
+                std::vector<N::Row> result;
+                for (const auto& [label, suffix] : {
+                        std::pair{"tracker_inventory", "Inventory"}, {"tracker_equipment", "Equipment"},
+                        {"tracker_misc", "Misc"}, {"tracker_rewards", "DungeonRewards"}, {"tracker_songs", "Songs"} }) {
+                    result.push_back(N::CVarChoice(N::Text(label), std::string(CVAR_TRACKER_ITEM("DisplayType.")) + suffix,
+                                                  SECTION_DISPLAY_MAIN_WINDOW, N::TrackerChoices(displayTypes), "", refresh));
                 }
-                if (CVarCombobox("Combo Button 2", CVAR_TRACKER_ITEM("ComboButton2"), buttonStrings,
-                                 ComboboxOptions()
-                                     .DefaultIndex(TRACKER_COMBO_BUTTON_R)
-                                     .ComponentAlignment(ComponentAlignments::Right)
-                                     .LabelPosition(LabelPositions::Far)
-                                     .Color(THEME_COLOR))) {
-                    shouldUpdateVectors = true;
+                if (CVarGetInteger(CVAR_TRACKER_ITEM("DisplayType.DungeonRewards"), SECTION_DISPLAY_MAIN_WINDOW) == SECTION_DISPLAY_SEPARATE)
+                    result.push_back(N::CVarToggle(N::Text("tracker_circle"), CVAR_TRACKER_ITEM("DungeonRewardsLayout"), false, "", refresh));
+                N::AppendWidget(result, dungeonItemTracking, dungeonItemTracking.cVar);
+                const auto dungeonDisplay = CVarGetInteger(CVAR_TRACKER_ITEM("DisplayType.DungeonItems"), SECTION_DISPLAY_HIDDEN);
+                if (dungeonDisplay != SECTION_DISPLAY_HIDDEN) {
+                    if (dungeonDisplay == SECTION_DISPLAY_SEPARATE)
+                        result.push_back(N::CVarToggle(N::Text("tracker_horizontal"), CVAR_TRACKER_ITEM("DungeonItems.Layout"), true, "", refresh));
+                    result.push_back(N::CVarToggle(N::Text("tracker_maps"), CVAR_TRACKER_ITEM("DungeonItems.DisplayMaps"), true, "", refresh));
                 }
-            }
-        }
-        ImGui::Separator();
-        CVarSliderInt("Icon size : %dpx", CVAR_TRACKER_ITEM("IconSize"),
-                      IntSliderOptions().Min(25).Max(128).DefaultValue(36).Color(THEME_COLOR));
-        CVarSliderInt("Icon margins : %dpx", CVAR_TRACKER_ITEM("IconSpacing"),
-                      IntSliderOptions().Min(-5).Max(50).DefaultValue(12).Color(THEME_COLOR));
-        CVarSliderInt("Text size : %dpx", CVAR_TRACKER_ITEM("TextSize"),
-                      IntSliderOptions().Min(1).Max(30).DefaultValue(13).Color(THEME_COLOR));
-
-        ImGui::NewLine();
-        SohGui::mSohMenu->MenuDrawItem(ammoTracking, 250, THEME_COLOR);
-        if (CVarGetInteger(CVAR_TRACKER_ITEM("ItemCountType"), ITEM_TRACKER_NUMBER_CURRENT_CAPACITY_ONLY) ==
-                ITEM_TRACKER_NUMBER_CURRENT_CAPACITY_ONLY ||
-            CVarGetInteger(CVAR_TRACKER_ITEM("ItemCountType"), ITEM_TRACKER_NUMBER_CURRENT_CAPACITY_ONLY) ==
-                ITEM_TRACKER_NUMBER_CURRENT_AMMO_ONLY) {
-            if (CVarCheckbox("Align count to left side", CVAR_TRACKER_ITEM("ItemCountAlignLeft"),
-                             CheckboxOptions().Color(THEME_COLOR))) {
-                shouldUpdateVectors = true;
-            }
-        }
-
-        SohGui::mSohMenu->MenuDrawItem(keyTracking, 250, THEME_COLOR);
-        SohGui::mSohMenu->MenuDrawItem(triforcePieceCount, 250, THEME_COLOR);
-
-        ImGui::TableNextColumn();
-
-        if (CVarCombobox("Inventory", CVAR_TRACKER_ITEM("DisplayType.Inventory"), displayTypes,
-                         ComboboxOptions()
-                             .DefaultIndex(SECTION_DISPLAY_MAIN_WINDOW)
-                             .ComponentAlignment(ComponentAlignments::Right)
-                             .LabelPosition(LabelPositions::Far)
-                             .Color(THEME_COLOR))) {
-            shouldUpdateVectors = true;
-        }
-        if (CVarCombobox("Equipment", CVAR_TRACKER_ITEM("DisplayType.Equipment"), displayTypes,
-                         ComboboxOptions()
-                             .DefaultIndex(SECTION_DISPLAY_MAIN_WINDOW)
-                             .ComponentAlignment(ComponentAlignments::Right)
-                             .LabelPosition(LabelPositions::Far)
-                             .Color(THEME_COLOR))) {
-            shouldUpdateVectors = true;
-        }
-        if (CVarCombobox("Misc", CVAR_TRACKER_ITEM("DisplayType.Misc"), displayTypes,
-                         ComboboxOptions()
-                             .DefaultIndex(SECTION_DISPLAY_MAIN_WINDOW)
-                             .ComponentAlignment(ComponentAlignments::Right)
-                             .LabelPosition(LabelPositions::Far)
-                             .Color(THEME_COLOR))) {
-            shouldUpdateVectors = true;
-        }
-        if (CVarCombobox("Dungeon Rewards", CVAR_TRACKER_ITEM("DisplayType.DungeonRewards"), displayTypes,
-                         ComboboxOptions()
-                             .DefaultIndex(SECTION_DISPLAY_MAIN_WINDOW)
-                             .ComponentAlignment(ComponentAlignments::Right)
-                             .LabelPosition(LabelPositions::Far)
-                             .Color(THEME_COLOR))) {
-            shouldUpdateVectors = true;
-        }
-        if (CVarGetInteger(CVAR_TRACKER_ITEM("DisplayType.DungeonRewards"), SECTION_DISPLAY_MAIN_WINDOW) ==
-            SECTION_DISPLAY_SEPARATE) {
-            if (CVarCheckbox("Circle display", CVAR_TRACKER_ITEM("DungeonRewardsLayout"),
-                             CheckboxOptions().DefaultValue(false).Color(THEME_COLOR))) {
-                shouldUpdateVectors = true;
-            }
-        }
-        if (CVarCombobox("Songs", CVAR_TRACKER_ITEM("DisplayType.Songs"), displayTypes,
-                         ComboboxOptions()
-                             .DefaultIndex(SECTION_DISPLAY_MAIN_WINDOW)
-                             .ComponentAlignment(ComponentAlignments::Right)
-                             .LabelPosition(LabelPositions::Far)
-                             .Color(THEME_COLOR))) {
-            shouldUpdateVectors = true;
-        }
-        SohGui::mSohMenu->MenuDrawItem(dungeonItemTracking, 250, THEME_COLOR);
-        if (CVarGetInteger(CVAR_TRACKER_ITEM("DisplayType.DungeonItems"), SECTION_DISPLAY_HIDDEN) !=
-            SECTION_DISPLAY_HIDDEN) {
-            if (CVarGetInteger(CVAR_TRACKER_ITEM("DisplayType.DungeonItems"), SECTION_DISPLAY_HIDDEN) ==
-                SECTION_DISPLAY_SEPARATE) {
-                if (CVarCheckbox("Horizontal display", CVAR_TRACKER_ITEM("DungeonItems.Layout"),
-                                 CheckboxOptions().DefaultValue(true).Color(THEME_COLOR))) {
-                    shouldUpdateVectors = true;
+                for (auto* widget : { &gregTracking, &triforcePieceTracking, &beanSoulsTracking, &bossSoulsTracking,
+                        &jabberNutsTracking, &ocarinaButtonTracking, &overworldKeysTracking, &fishingPoleTracking, &personalNotesWiget })
+                    N::AppendWidget(result, *widget, widget->cVar);
+                result.push_back(N::CVarChoice(N::Text("tracker_total_checks"), CVAR_TRACKER_ITEM("TotalChecks.DisplayType"),
+                                              SECTION_DISPLAY_MINIMAL_HIDDEN, N::TrackerChoices(minimalDisplayTypes), "", refresh));
+                return result;
+            });
+        }));
+        rows.push_back(N::Link("layouts", N::Text("overlay_layouts"), [] {
+            return N::MakePage("tracker/item/layouts", N::Text("overlay_layouts"), [] {
+                std::vector<N::Row> result;
+                for (const auto* name : itemTrackerWindowIDs) {
+                    const bool notes = std::string(name) == "Personal Notes";
+                    auto row = N::OverlayLayout(name, notes, notes ? 400 : 0, notes ? 300 : 0);
+                    row.label = name;
+                    result.push_back(std::move(row));
                 }
-            }
-            if (CVarCheckbox("Maps and compasses", CVAR_TRACKER_ITEM("DungeonItems.DisplayMaps"),
-                             CheckboxOptions().DefaultValue(true).Color(THEME_COLOR))) {
-                shouldUpdateVectors = true;
-            }
-        }
-        SohGui::mSohMenu->MenuDrawItem(gregTracking, 250, THEME_COLOR);
-        SohGui::mSohMenu->MenuDrawItem(triforcePieceTracking, 250, THEME_COLOR);
-        SohGui::mSohMenu->MenuDrawItem(beanSoulsTracking, 250, THEME_COLOR);
-        SohGui::mSohMenu->MenuDrawItem(bossSoulsTracking, 250, THEME_COLOR);
-        SohGui::mSohMenu->MenuDrawItem(jabberNutsTracking, 250, THEME_COLOR);
-        SohGui::mSohMenu->MenuDrawItem(ocarinaButtonTracking, 250, THEME_COLOR);
-        SohGui::mSohMenu->MenuDrawItem(overworldKeysTracking, 250, THEME_COLOR);
-        SohGui::mSohMenu->MenuDrawItem(fishingPoleTracking, 250, THEME_COLOR);
-
-        if (CVarCombobox("Total Checks", CVAR_TRACKER_ITEM("TotalChecks.DisplayType"), minimalDisplayTypes,
-                         ComboboxOptions()
-                             .DefaultIndex(SECTION_DISPLAY_MINIMAL_HIDDEN)
-                             .ComponentAlignment(ComponentAlignments::Right)
-                             .LabelPosition(LabelPositions::Far)
-                             .Color(THEME_COLOR))) {
-            shouldUpdateVectors = true;
-        }
-
-        SohGui::mSohMenu->MenuDrawItem(personalNotesWiget, 250, THEME_COLOR);
-        SohGui::mSohMenu->MenuDrawItem(hookshotIdentWidget, 250, THEME_COLOR);
-
-        ImGui::PopStyleVar(1);
-        ImGui::EndTable();
-    }
+                return result;
+            });
+        }));
+        auto notes = N::String("notes", N::Text("tracker_notes"), itemTrackerNotes.empty() ? "" : itemTrackerNotes.Data,
+                              [](std::string text) {
+            if (!GameInteractor::IsSaveLoaded() || !IsValidSaveFile()) return;
+            itemTrackerNotes.resize(static_cast<int>(text.size() + 1));
+            std::copy(text.begin(), text.end(), itemTrackerNotes.Data);
+            itemTrackerNotes.Data[text.size()] = '\0';
+            SaveManager::Instance->SaveSection(gSaveContext.fileNum, itemTrackerSectionId, true);
+        }, "", 65535, {}, false, true);
+        notes.enabled = GameInteractor::IsSaveLoaded() && IsValidSaveFile();
+        if (!notes.enabled) notes.disabledReason = N::Text("save_required");
+        rows.push_back(notes);
+        return rows;
+    });
 }
 
 void ItemTrackerWindow::InitElement() {
@@ -2212,10 +2078,10 @@ void ItemTrackerWindow::InitElement() {
     itemTrackerSectionId = SaveManager::Instance->AddSaveFunction("itemTrackerData", 1, ItemTrackerSaveFile, true, -1);
     SaveManager::Instance->AddLoadFunction("itemTrackerData", 1, ItemTrackerLoadFile);
 
-    GameInteractor::Instance->RegisterGameHook<GameInteractor::OnGameFrameUpdate>(ItemTrackerOnFrame);
 }
 
 void RegisterItemTrackerWidgets() {
+    NativeOptions::RegisterPage("Item Tracker Settings", ItemTrackerSettingsPage);
     backgroundColor = { .name = "Background Color##ItemTracker", .type = WidgetType::WIDGET_CVAR_COLOR_PICKER };
     backgroundColor.CVar(CVAR_TRACKER_ITEM("BgColor"))
         .Options(
@@ -2232,8 +2098,6 @@ void RegisterItemTrackerWidgets() {
                      .ComboMap(windowType))
         .Callback([](WidgetInfo& info) { shouldUpdateVectors = true; });
     SohGui::mSohMenu->AddSearchWidget({ windowTypeWidget, "Randomizer", "Item Tracker", "General Settings" });
-    enableDraggingWidget;
-    onlyPausedWidget;
 
     ammoTracking = { .name = "Ammo/Capacity Tracking", .type = WidgetType::WIDGET_CVAR_COMBOBOX };
     ammoTracking.CVar(CVAR_TRACKER_ITEM("ItemCountType"))

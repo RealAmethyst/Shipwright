@@ -22,6 +22,7 @@ extern void Title_SetupView(TitleContext*, f32, f32, f32);
 #define LOGO_TO_DRAW_N64 1
 
 static bool shouldDrawIceOnSpinningLogo = false;
+static bool logoAnnounced = false;
 
 extern "C" void CustomLogoTitle_Draw(TitleContext* titleContext, uint8_t logoToDraw) {
     static s16 sTitleRotY = 0;
@@ -124,7 +125,7 @@ extern "C" void CustomLogoTitle_Draw(TitleContext* titleContext, uint8_t logoToD
 
 extern "C" void CustomLogoTitle_Main(TitleContext* titleContext) {
     static uint8_t logosSeen = 0;
-    uint8_t logoToDraw;
+    uint8_t logoToDraw = LOGO_TO_DRAW_N64;
 
     if (CVAR_BOOTSEQUENCE_VALUE == BOOTSEQUENCE_DEFAULT) {
         if (logosSeen == 0) {
@@ -144,6 +145,11 @@ extern "C" void CustomLogoTitle_Main(TitleContext* titleContext) {
     gSPSegment(POLY_OPA_DISP++, 1, (uintptr_t)titleContext->staticSegment);
     Gfx_SetupFrame(titleContext->state.gfxCtx, 0, 0, 0);
     Title_Calc(titleContext);
+    if (!logoAnnounced && titleContext->coverAlpha < 255 &&
+        (CVAR_BOOTSEQUENCE_VALUE == BOOTSEQUENCE_DEFAULT || CVAR_BOOTSEQUENCE_VALUE == BOOTSEQUENCE_AUTHENTIC)) {
+        GameInteractor_ExecuteOnBootLogo(logoToDraw);
+        logoAnnounced = true;
+    }
     CustomLogoTitle_Draw(titleContext, logoToDraw);
 
     if (titleContext->exit) {
@@ -175,6 +181,7 @@ extern "C" void CustomLogoTitle_Main(TitleContext* titleContext) {
 //
 
 void OnZTitleInitReplaceTitleMainWithCustom(void* gameState) {
+    logoAnnounced = false;
     TitleContext* titleContext = (TitleContext*)gameState;
     titleContext->state.main = (GameStateFunc)CustomLogoTitle_Main;
 }

@@ -1,5 +1,5 @@
 #include "valueViewer.h"
-#include "soh/SohGui/UIWidgets.hpp"
+#include "soh/NativeOptions/NativeOptions.h"
 #include "soh/SohGui/SohGui.hpp"
 #include "soh/OTRGlobals.h"
 #include "soh/ShipInit.hpp"
@@ -45,39 +45,13 @@ std::vector<ValueTableElement> valueTable = {
     { "Analog Stick Y",     "play->state.input->cur.stick_y",       "AY:",     TYPE_S8,    true,  []() -> void* { return &gPlayState->state.input->cur.stick_y; },      WHITE },
     { "getItemID",          "Player->getItemId",                    "ITEM:",   TYPE_S16,   true,  []() -> void* { return &GET_PLAYER(gPlayState)->getItemId; },         WHITE },
     { "getItemEntry",       "Player->getItemEntry",                 "IE:",     TYPE_S16,   true,  []() -> void* { return &GET_PLAYER(gPlayState)->getItemEntry.itemId; }, WHITE },
-    /* TODO: Find these (from GZ)
-    "XZ Units Traveled (Camera based speed variable)" f32 0x801C9018
-    "Movement Angle" x16 0x801DBB1C
-    "Camera Angle" u16 0x801C907C
-    "Time of Day" x16 0x8011AC8C
-    "Global Frame Counter" s32 0x801C8DFC
-    "Lit Deku Stick Timer" u16 0x801DBB40
-    "Cutscene Pointer" u32 0x801CAAC8
-    "Get Item Value" s8 0x801DB714
-    "Last RNG Value" x32 0x80105A80
-    "Last Item Button Pressed" u8 0x801DB430
-    "Last Damage Value" x32 0x801DB7DC
-    "Temp B Value" u8 0x8011C062
-    "Framerate Divisor" u8 0x801C7861
-    "Heads Up Display (HUD)" u16 0x8011C068
-    "Analog Stick Angle" s16 0x803AA698
-    "Deku Tree Warp Timer (Reload Room)" u16 0x801F0352
-    "Dodongo's Cavern Warp Timer" u16 0x801E30B2
-    "Jabu-Jabu Warp Timer" u16 0x802008B2
-    "Forest Temple Warp Timer" u16 0x801EC5B2
-    "Fire Temple Warp Timer" u16 0x801F3E42
-    "Water Temple Warp Timer" u16 0x801F8762
-    "Shadow Temple Warp Timer" u16 0x801F48A2
-    "Spirit Temple Warp Timer" u16 0x801FD562
-    "Deku Tree Warp Timer" u16 0x801F83A2
-    */
 };
 // clang-format on
 
 extern "C" void ValueViewer_Draw(GfxPrint* printer) {
     for (size_t i = 0; i < valueTable.size(); i++) {
         ValueTableElement& element = valueTable[i];
-        if (!element.isActive || !element.isPrinted || (gPlayState == NULL && element.requiresPlayState))
+        if (!element.isActive || !element.isPrinted || (element.requiresPlayState && (!gPlayState || !GET_PLAYER(gPlayState))))
             continue;
         GfxPrint_SetColor(printer, element.color.x * 255, element.color.y * 255, element.color.z * 255,
                           element.color.w * 255);
@@ -153,131 +127,105 @@ void RegisterValueViewerHooks() {
 
 static RegisterShipInitFunc initFunc(RegisterValueViewerHooks, { CVAR_NAME });
 
-void ValueViewerWindow::DrawElement() {
-    ImGui::BeginDisabled(CVarGetInteger(CVAR_SETTING("DisableChanges"), 0));
-    UIWidgets::CVarCheckbox("Enable Printing", CVAR_NAME, UIWidgets::CheckboxOptions().Color(THEME_COLOR));
+namespace {
+namespace N = NativeOptions;
 
-    ImGui::BeginGroup();
-    static int selectedElement = -1;
-    std::string selectedElementText = (selectedElement == -1) ? "Select a value"
-                                                              : (std::string(valueTable[selectedElement].name) + " (" +
-                                                                 std::string(valueTable[selectedElement].path) + ")");
-    UIWidgets::PushStyleCombobox(THEME_COLOR);
-    if (ImGui::BeginCombo("##valueViewerElement", selectedElementText.c_str())) {
-        for (size_t i = 0; i < valueTable.size(); i++) {
-            if (valueTable[i].isActive)
-                continue;
-            bool isSelected = (selectedElement == i);
-            std::string elementText = (std::string(valueTable[i].name) + " (" + std::string(valueTable[i].path) + ")");
-            if (ImGui::Selectable(elementText.c_str(), isSelected)) {
-                selectedElement = i;
-            }
-            if (isSelected) {
-                ImGui::SetItemDefaultFocus();
-            }
-        }
-        ImGui::EndCombo();
+std::string ValueText(const ValueTableElement& element) {
+    if (element.requiresPlayState && (!gPlayState || !GET_PLAYER(gPlayState))) return N::Text("unavailable");
+    const void* value = element.valueFn();
+    if (!value) return N::Text("unavailable");
+    auto integer = [&](auto number) { return element.typeFormat ? fmt::format("0x{:x}", number) : fmt::format("{}", number); };
+    switch (element.type) {
+        case TYPE_S8: return integer(*static_cast<const s8*>(value));
+        case TYPE_U8: return integer(*static_cast<const u8*>(value));
+        case TYPE_S16: return integer(*static_cast<const s16*>(value));
+        case TYPE_U16: return integer(*static_cast<const u16*>(value));
+        case TYPE_S32: return integer(*static_cast<const s32*>(value));
+        case TYPE_U32: return integer(*static_cast<const u32*>(value));
+        case TYPE_CHAR: return std::string(1, *static_cast<const char*>(value));
+        case TYPE_STRING: return static_cast<const char*>(value);
+        case TYPE_FLOAT:
+            return element.typeFormat ? fmt::format("{:.1f}", *static_cast<const float*>(value)) :
+                                        fmt::format("{:f}", *static_cast<const float*>(value));
     }
-    UIWidgets::PopStyleCombobox();
-    ImGui::SameLine();
-    UIWidgets::PushStyleButton(THEME_COLOR);
-    if (selectedElement != -1 && ImGui::Button("+")) {
-        valueTable[selectedElement].isActive = true;
-        selectedElement = -1;
-    }
-    UIWidgets::PopStyleButton();
-    ImGui::EndGroup();
-
-    for (size_t i = 0; i < valueTable.size(); i++) {
-        ValueTableElement& element = valueTable[i];
-        if (!element.isActive || (gPlayState == NULL && element.requiresPlayState))
-            continue;
-        UIWidgets::PushStyleButton(THEME_COLOR);
-        UIWidgets::PushStyleCheckbox(THEME_COLOR);
-        ImGui::AlignTextToFramePadding();
-        if (ImGui::Button((ICON_FA_TIMES + std::string("##") + std::string(element.name)).c_str())) {
-            element.isActive = false;
-            element.isPrinted = false;
-        }
-        UIWidgets::PopStyleCheckbox();
-        UIWidgets::PopStyleButton();
-        ImGui::SameLine();
-        ImGui::Text("%s:", element.name);
-        ImGui::SameLine();
-        switch (element.type) {
-            case TYPE_S8:
-                ImGui::Text(element.typeFormat ? "0x%x" : "%d", *(s8*)element.valueFn());
-                break;
-            case TYPE_U8:
-                ImGui::Text(element.typeFormat ? "0x%x" : "%u", *(u8*)element.valueFn());
-                break;
-            case TYPE_S16:
-                ImGui::Text(element.typeFormat ? "0x%x" : "%d", *(s16*)element.valueFn());
-                break;
-            case TYPE_U16:
-                ImGui::Text(element.typeFormat ? "0x%x" : "%u", *(u16*)element.valueFn());
-                break;
-            case TYPE_S32:
-                ImGui::Text(element.typeFormat ? "0x%x" : "%d", *(s32*)element.valueFn());
-                break;
-            case TYPE_U32:
-                ImGui::Text(element.typeFormat ? "0x%x" : "%u", *(u32*)element.valueFn());
-                break;
-            case TYPE_CHAR:
-                ImGui::Text("%c", *(char*)element.valueFn());
-                break;
-            case TYPE_STRING:
-                ImGui::Text("%s", (char*)element.valueFn());
-                break;
-            case TYPE_FLOAT:
-                ImGui::Text(element.typeFormat ? "%4.1f" : "%f", *(float*)element.valueFn());
-                break;
-        }
-        ImGui::SameLine();
-        UIWidgets::PushStyleCheckbox(THEME_COLOR);
-        if (element.type <= TYPE_U32) {
-            ImGui::Checkbox(("Hex##" + std::string(element.name)).c_str(), &element.typeFormat);
-            ImGui::SameLine();
-        } else if (element.type == TYPE_FLOAT) {
-            ImGui::Checkbox(("Trim##" + std::string(element.name)).c_str(), &element.typeFormat);
-            ImGui::SameLine();
-        }
-        UIWidgets::PopStyleCheckbox();
-
-        ImGui::BeginGroup();
-        if (CVarGetInteger(CVAR_DEVELOPER_TOOLS("ValueViewerEnablePrinting"), 0)) {
-            UIWidgets::PushStyleCheckbox(THEME_COLOR);
-            ImGui::Checkbox(("Print##" + std::string(element.name)).c_str(), &element.isPrinted);
-            UIWidgets::PopStyleCheckbox();
-            if (element.isPrinted) {
-                char* prefix = (char*)element.prefix.c_str();
-                ImGui::SameLine();
-                ImGui::SetNextItemWidth(80.0f);
-                UIWidgets::PushStyleInput(THEME_COLOR);
-                if (ImGui::InputText(("Prefix##" + std::string(element.name)).c_str(), prefix, 10)) {
-                    element.prefix = prefix;
-                }
-                UIWidgets::PopStyleInput();
-                ImGui::SameLine();
-                ImGui::ColorEdit3(("##color" + std::string(element.name)).c_str(), (float*)&element.color,
-                                  ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
-                ImGui::SameLine();
-                UIWidgets::PushStyleCheckbox(THEME_COLOR);
-                if (ImGui::Button(("Position##" + std::string(element.name)).c_str())) {
-                    ImGui::OpenPopup(("Position Picker##" + std::string(element.name)).c_str());
-                }
-                UIWidgets::PopStyleCheckbox();
-                if (ImGui::BeginPopup(("Position Picker##" + std::string(element.name)).c_str())) {
-                    ImGui::DragInt("X", (int*)&element.x, 1.0f, 0, 44);
-                    ImGui::DragInt("Y", (int*)&element.y, 1.0f, 0, 29);
-                    ImGui::EndPopup();
-                }
-            }
-        }
-        ImGui::EndGroup();
-    }
-    ImGui::EndDisabled();
+    return "";
 }
 
-void ValueViewerWindow::InitElement() {
+N::PagePtr ValuePage(size_t index) {
+    return N::MakePage("advanced/value/" + std::to_string(index), valueTable[index].name, [=] {
+        auto& element = valueTable[index];
+        auto value = N::Action("value", N::Text("value_current"), [] { N::ReadCurrentDescription(); }, element.path);
+        value.value = ValueText(element);
+        std::vector<N::Row> rows{value};
+        if (element.type <= TYPE_U32 || element.type == TYPE_FLOAT)
+            rows.push_back(N::Toggle("format", N::Text(element.type == TYPE_FLOAT ? "value_trim" : "value_hex"),
+                                    element.typeFormat, [=](bool next) { valueTable[index].typeFormat = next; }));
+        if (CVarGetInteger(CVAR_NAME, 0)) {
+            rows.push_back(N::Toggle("print", N::Text("value_print"), element.isPrinted, [=](bool next) { valueTable[index].isPrinted = next; }));
+            if (element.isPrinted) {
+                rows.push_back(N::String("prefix", N::Text("value_prefix"), element.prefix,
+                                        [=](std::string next) { valueTable[index].prefix = std::move(next); }, "", 9));
+                rows.push_back(N::Integer("x", "X", static_cast<int>(element.x), 0, 44, 1, [=](int next) { valueTable[index].x = next; }));
+                rows.push_back(N::Integer("y", "Y", static_cast<int>(element.y), 0, 29, 1, [=](int next) { valueTable[index].y = next; }));
+                rows.push_back(N::Link("color", N::Text("color"), [=] {
+                    return N::MakePage("advanced/value/color", N::Text("color"), [=] {
+                        std::vector<N::Row> components;
+                        const char* keys[] = {"red", "green", "blue"};
+                        const auto& color = valueTable[index].color;
+                        const float values[] = {color.x, color.y, color.z};
+                        for (int component = 0; component < 3; ++component)
+                            components.push_back(N::Decimal(keys[component], N::Text(keys[component]),
+                                values[component], 0, 1, 0.01f, [=](float next) {
+                                    auto& color = valueTable[index].color;
+                                    if (component == 0) color.x = next;
+                                    else if (component == 1) color.y = next;
+                                    else color.z = next;
+                                }, "", true));
+                        return components;
+                    });
+                }));
+            }
+        }
+        rows.push_back(N::Action("remove", N::Text("remove"), [=] {
+            valueTable[index].isActive = valueTable[index].isPrinted = false;
+            N::GetModel().Back();
+        }));
+        if (CVarGetInteger(CVAR_SETTING("DisableChanges"), 0)) N::Disable(rows, N::Text("race_lockout"));
+        return rows;
+    });
+}
+
+N::PagePtr ValueViewerPage() {
+    return N::MakePage("advanced/values", N::Text("value_viewer"), [] {
+        std::vector<N::Row> rows{
+            N::CVarToggle(N::Text("value_printing"), CVAR_NAME),
+            N::Link("add", N::Text("value_select"), [] {
+                return N::MakePage("advanced/values/add", N::Text("value_select"), [] {
+                    std::vector<N::Row> rows;
+                    for (size_t index = 0; index < valueTable.size(); ++index) {
+                        if (valueTable[index].isActive) continue;
+                        rows.push_back(N::Action(std::to_string(index), valueTable[index].name, [=] {
+                            valueTable[index].isActive = true;
+                            N::GetModel().Back();
+                        }, valueTable[index].path));
+                    }
+                    return rows;
+                });
+            })
+        };
+        for (size_t index = 0; index < valueTable.size(); ++index) {
+            const auto& element = valueTable[index];
+            if (!element.isActive) continue;
+            auto row = N::Link(std::to_string(index), element.name, [=] { return ValuePage(index); }, element.path);
+            row.value = ValueText(element);
+            rows.push_back(row);
+        }
+        if (CVarGetInteger(CVAR_SETTING("DisableChanges"), 0)) N::Disable(rows, N::Text("race_lockout"));
+        return rows;
+    });
+}
+} // namespace
+
+void InitializeValueViewer() {
+    NativeOptions::RegisterPage("Value Viewer", ValueViewerPage);
 }

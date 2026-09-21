@@ -5,6 +5,8 @@
 
 #ifdef __cplusplus
 
+#include <set>
+
 void LoadGuiTextures();
 
 extern "C" {

@@ -6,6 +6,7 @@
 //
 
 #include "SohGui.hpp"
+#include "soh/NativeOptions/NativeOptions.h"
 
 #include <spdlog/spdlog.h>
 #include <imgui.h>
@@ -68,33 +69,13 @@ std::string GetWindowButtonText(const char* text, bool menuOpen) {
 
 // MARK: - Delegates
 
-std::shared_ptr<Ship::GuiWindow> mConsoleWindow;
-std::shared_ptr<SohStatsWindow> mStatsWindow;
-std::shared_ptr<Ship::GuiWindow> mGfxDebuggerWindow;
 
 std::shared_ptr<SohMenu> mSohMenu;
-std::shared_ptr<ModMenuWindow> mModMenuWindow;
-std::shared_ptr<AudioEditor> mAudioEditorWindow;
 std::shared_ptr<InputViewer> mInputViewer;
-std::shared_ptr<InputViewerSettingsWindow> mInputViewerSettings;
-std::shared_ptr<CosmeticsEditorWindow> mCosmeticsEditorWindow;
-std::shared_ptr<ActorViewerWindow> mActorViewerWindow;
-std::shared_ptr<ColViewerWindow> mColViewerWindow;
-std::shared_ptr<SaveEditorWindow> mSaveEditorWindow;
-std::shared_ptr<HookDebuggerWindow> mHookDebuggerWindow;
-std::shared_ptr<DLViewerWindow> mDLViewerWindow;
-std::shared_ptr<ValueViewerWindow> mValueViewerWindow;
-std::shared_ptr<MessageViewer> mMessageViewerWindow;
-std::shared_ptr<GameplayStatsWindow> mGameplayStatsWindow;
-std::shared_ptr<CheckTracker::CheckTrackerSettingsWindow> mCheckTrackerSettingsWindow;
 std::shared_ptr<CheckTracker::CheckTrackerWindow> mCheckTrackerWindow;
-std::shared_ptr<EntranceTracker::EntranceTrackerSettingsWindow> mEntranceTrackerSettingsWindow;
 std::shared_ptr<EntranceTracker::EntranceTrackerWindow> mEntranceTrackerWindow;
-std::shared_ptr<ItemTrackerSettingsWindow> mItemTrackerSettingsWindow;
 std::shared_ptr<ItemTrackerWindow> mItemTrackerWindow;
 std::shared_ptr<TimeSplitWindow> mTimeSplitWindow;
-std::shared_ptr<PlandomizerWindow> mPlandomizerWindow;
-std::shared_ptr<SohModalWindow> mModalWindow;
 std::shared_ptr<Notification::Window> mNotificationWindow;
 std::shared_ptr<TimeDisplayWindow> mTimeDisplayWindow;
 std::shared_ptr<AnchorRoomWindow> mAnchorRoomWindow;
@@ -109,94 +90,53 @@ std::shared_ptr<SohMenu> GetSohMenu() {
 
 void SetupMenu() {
     auto gui = Ship::Context::GetInstance()->GetWindow()->GetGui();
-    mSohMenu = std::make_shared<SohMenu>(CVAR_WINDOW("Menu"), "Port Menu");
+    // Opening a native screen is transient, including after a crash or exit.
+    CVarClear(CVAR_WINDOW("Menu"));
+    gui->SaveConsoleVariablesNextFrame();
+    mSohMenu = std::make_shared<SohMenu>("", "Port Menu");
     gui->SetMenu(mSohMenu);
 
-    mModalWindow = std::make_shared<SohModalWindow>(CVAR_WINDOW("ModalWindow"), "Modal Window");
-    gui->AddGuiWindow(mModalWindow);
-    mModalWindow->Show();
 }
 
 void SetupMenuElements() {
     mSohMenu->AddMenuElements();
+    NativeOptions::Init();
 }
 
 void SetupGuiElements() {
     auto gui = Ship::Context::GetInstance()->GetWindow()->GetGui();
 
-    mConsoleWindow = std::make_shared<SohConsoleWindow>(CVAR_WINDOW("SohConsole"), "Console##SoH", ImVec2(820, 630));
-    gui->AddGuiWindow(mConsoleWindow);
+    InitializeConsolePages();
 
-    mGfxDebuggerWindow =
-        std::make_shared<SohGfxDebuggerWindow>(CVAR_WINDOW("SohGfxDebugger"), "GfxDebugger##SoH", ImVec2(820, 630));
-    gui->AddGuiWindow(mGfxDebuggerWindow);
+    InitializeGraphicsDebugger();
 
-    mStatsWindow = std::make_shared<SohStatsWindow>(CVAR_WINDOW("SohStats"), "Stats##Soh", ImVec2(400, 100));
-    gui->AddGuiWindow(mStatsWindow);
+    InitializePerformanceStats();
 
-    /*mInputEditorWindow = gui->GetGuiWindow("Controller Configuration");
-    if (mInputEditorWindow == nullptr) {
-        SPDLOG_ERROR("Could not find input editor window");
-    }*/
-
-    mModMenuWindow = std::make_shared<ModMenuWindow>(CVAR_WINDOW("ModMenu"), "Mod Menu", ImVec2(820, 630));
-    gui->AddGuiWindow(mModMenuWindow);
-    mAudioEditorWindow = std::make_shared<AudioEditor>(CVAR_WINDOW("AudioEditor"), "Audio Editor", ImVec2(820, 630));
-    gui->AddGuiWindow(mAudioEditorWindow);
+    InitializeMods();
+    InitializeAudioEditor();
     mInputViewer = std::make_shared<InputViewer>(CVAR_WINDOW("InputViewer"), "Input Viewer");
     gui->AddGuiWindow(mInputViewer);
-    mInputViewerSettings = std::make_shared<InputViewerSettingsWindow>(CVAR_WINDOW("InputViewerSettings"),
-                                                                       "Input Viewer Settings", ImVec2(500, 525));
-    gui->AddGuiWindow(mInputViewerSettings);
-    mCosmeticsEditorWindow =
-        std::make_shared<CosmeticsEditorWindow>(CVAR_WINDOW("CosmeticsEditor"), "Cosmetics Editor", ImVec2(550, 520));
-    gui->AddGuiWindow(mCosmeticsEditorWindow);
-    mActorViewerWindow =
-        std::make_shared<ActorViewerWindow>(CVAR_WINDOW("ActorViewer"), "Actor Viewer", ImVec2(520, 600));
-    gui->AddGuiWindow(mActorViewerWindow);
-    mColViewerWindow =
-        std::make_shared<ColViewerWindow>(CVAR_WINDOW("CollisionViewer"), "Collision Viewer", ImVec2(520, 600));
-    gui->AddGuiWindow(mColViewerWindow);
-    mSaveEditorWindow = std::make_shared<SaveEditorWindow>(CVAR_WINDOW("SaveEditor"), "Save Editor", ImVec2(520, 600));
-    gui->AddGuiWindow(mSaveEditorWindow);
-    mHookDebuggerWindow =
-        std::make_shared<HookDebuggerWindow>(CVAR_WINDOW("HookDebugger"), "Hook Debugger", ImVec2(1250, 850));
-    gui->AddGuiWindow(mHookDebuggerWindow);
-    mDLViewerWindow =
-        std::make_shared<DLViewerWindow>(CVAR_WINDOW("DisplayListViewer"), "Display List Viewer", ImVec2(520, 600));
-    gui->AddGuiWindow(mDLViewerWindow);
-    mValueViewerWindow =
-        std::make_shared<ValueViewerWindow>(CVAR_WINDOW("ValueViewer"), "Value Viewer", ImVec2(520, 600));
-    gui->AddGuiWindow(mValueViewerWindow);
-    mMessageViewerWindow =
-        std::make_shared<MessageViewer>(CVAR_WINDOW("MessageViewer"), "Message Viewer", ImVec2(520, 600));
-    gui->AddGuiWindow(mMessageViewerWindow);
-    mGameplayStatsWindow =
-        std::make_shared<GameplayStatsWindow>(CVAR_WINDOW("GameplayStats"), "Gameplay Stats", ImVec2(480, 550));
-    gui->AddGuiWindow(mGameplayStatsWindow);
+    InitializeCosmeticsEditor();
+    InitializeActorViewer();
+    InitializeCollisionViewer();
+    InitializeSaveEditor();
+    InitializeHookDebugger();
+    InitializeDisplayListViewer();
+    InitializeValueViewer();
+    InitializeMessageViewer();
+    InitializeGameplayStats();
     mCheckTrackerWindow = std::make_shared<CheckTracker::CheckTrackerWindow>(CVAR_WINDOW("CheckTracker"),
                                                                              "Check Tracker", ImVec2(400, 540));
     gui->AddGuiWindow(mCheckTrackerWindow);
-    mCheckTrackerSettingsWindow = std::make_shared<CheckTracker::CheckTrackerSettingsWindow>(
-        CVAR_WINDOW("CheckTrackerSettings"), "Check Tracker Settings", ImVec2(600, 375));
-    gui->AddGuiWindow(mCheckTrackerSettingsWindow);
     mEntranceTrackerWindow = std::make_shared<EntranceTracker::EntranceTrackerWindow>(
         CVAR_WINDOW("EntranceTracker"), "Entrance Tracker", ImVec2(500, 750));
     gui->AddGuiWindow(mEntranceTrackerWindow);
-    mEntranceTrackerSettingsWindow = std::make_shared<EntranceTracker::EntranceTrackerSettingsWindow>(
-        CVAR_WINDOW("EntranceTrackerSettings"), "Entrance Tracker Settings", ImVec2(600, 375));
-    gui->AddGuiWindow(mEntranceTrackerSettingsWindow);
     mItemTrackerWindow =
         std::make_shared<ItemTrackerWindow>(CVAR_WINDOW("ItemTracker"), "Item Tracker", ImVec2(350, 600));
     gui->AddGuiWindow(mItemTrackerWindow);
-    mItemTrackerSettingsWindow = std::make_shared<ItemTrackerSettingsWindow>(CVAR_WINDOW("ItemTrackerSettings"),
-                                                                             "Item Tracker Settings", ImVec2(733, 472));
-    gui->AddGuiWindow(mItemTrackerSettingsWindow);
     mTimeSplitWindow = std::make_shared<TimeSplitWindow>(CVAR_WINDOW("TimeSplits"), "Time Splits", ImVec2(450, 660));
     gui->AddGuiWindow(mTimeSplitWindow);
-    mPlandomizerWindow =
-        std::make_shared<PlandomizerWindow>(CVAR_WINDOW("PlandomizerEditor"), "Plandomizer Editor", ImVec2(850, 760));
-    gui->AddGuiWindow(mPlandomizerWindow);
+    RegisterPlandomizerPage();
     mNotificationWindow = std::make_shared<Notification::Window>(CVAR_WINDOW("Notifications"), "Notifications Window");
     gui->AddGuiWindow(mNotificationWindow);
     mNotificationWindow->Show();
@@ -211,56 +151,18 @@ void Destroy() {
     gui->RemoveAllGuiWindows();
 
     mNotificationWindow = nullptr;
-    mModalWindow = nullptr;
+    ClearNativePopups();
     mItemTrackerWindow = nullptr;
-    mItemTrackerSettingsWindow = nullptr;
     mEntranceTrackerWindow = nullptr;
-    mEntranceTrackerSettingsWindow = nullptr;
     mCheckTrackerWindow = nullptr;
-    mCheckTrackerSettingsWindow = nullptr;
-    mGameplayStatsWindow = nullptr;
-    mDLViewerWindow = nullptr;
-    mValueViewerWindow = nullptr;
-    mMessageViewerWindow = nullptr;
-    mSaveEditorWindow = nullptr;
-    mHookDebuggerWindow = nullptr;
-    mColViewerWindow = nullptr;
-    mActorViewerWindow = nullptr;
-    mCosmeticsEditorWindow = nullptr;
-    mModMenuWindow = nullptr;
-    mAudioEditorWindow = nullptr;
-    mStatsWindow = nullptr;
-    mConsoleWindow = nullptr;
-    mGfxDebuggerWindow = nullptr;
     mInputViewer = nullptr;
-    mInputViewerSettings = nullptr;
     mTimeSplitWindow = nullptr;
-    mPlandomizerWindow = nullptr;
     mTimeDisplayWindow = nullptr;
     mAnchorRoomWindow = nullptr;
 }
 
-void RegisterPopup(std::string title, std::string message, std::string button1, std::string button2,
-                   std::function<void()> button1callback, std::function<void()> button2callback) {
-    mModalWindow->RegisterPopup(title, message, button1, button2, button1callback, button2callback);
-}
-
-size_t PopupsQueued() {
-    return mModalWindow->PopupsQueued();
-}
-
-bool DismissPopup(std::string title) {
-    if (mModalWindow->IsPopupOpen(title)) {
-        mModalWindow->DismissPopup();
-        return true;
-    }
-    return false;
-}
-
 void ShowRandomizerSettingsMenu() {
-    CVarSetString(CVAR_SETTING("Menu.ActiveHeader"), "Randomizer");
-    CVarSetString(CVAR_SETTING("Menu.RandomizerSidebarSection"), "General");
-    mSohMenu->Show();
+    NativeOptions::RequestPage("Randomizer Settings");
 }
 
 void ShowEscMenu() {

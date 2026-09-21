@@ -451,11 +451,4 @@ const std::vector<std::string> state3 = {
     "Travelling to Hook Target",
 };
 
-class SaveEditorWindow final : public Ship::GuiWindow {
-  public:
-    using GuiWindow::GuiWindow;
-
-    void InitElement() override;
-    void DrawElement() override;
-    void UpdateElement() override{};
-};
+void InitializeSaveEditor();

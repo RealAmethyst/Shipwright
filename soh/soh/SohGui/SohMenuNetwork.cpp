@@ -1,4 +1,6 @@
 #include "SohMenu.h"
+#include "soh/NativeOptions/NativeOptions.h"
+#include <SDL.h>
 #include <soh/Notification/Notification.h>
 #include <soh/Network/Network.h>
 #include "SohGui.hpp"
@@ -43,36 +45,16 @@ void SohMenu::AddMenuNetwork() {
               "Click this button to copy the link to the Sail Github "
               "page to your clipboard.",
               WIDGET_TEXT);
-    AddWidget(path, ICON_FA_CLIPBOARD "##Sail", WIDGET_BUTTON)
+    AddWidget(path, NativeOptions::Text("copy_sail_link") + "##Sail", WIDGET_BUTTON)
         .Callback([](WidgetInfo& info) {
-            ImGui::SetClipboardText("https://github.com/HarbourMasters/sail");
+            SDL_SetClipboardText("https://github.com/HarbourMasters/sail");
             Notification::Emit({
                 .message = "Copied to clipboard",
             });
         })
         .Options(ButtonOptions().Tooltip("https://github.com/HarbourMasters/sail"));
-    AddWidget(path, "Host & Port", WIDGET_CUSTOM).CustomFunction([](WidgetInfo& info) {
-        ImGui::BeginDisabled(Sail::Instance->isEnabled || CVarGetInteger(CVAR_SETTING("DisableChanges"), 0));
-        ImGui::Text("%s", info.name.c_str());
-        CVarInputString("##HostSail", CVAR_REMOTE_SAIL("Host"),
-                        InputOptions()
-                            .Color(THEME_COLOR)
-                            .PlaceholderText("127.0.0.1")
-                            .DefaultValue("127.0.0.1")
-                            .Size(ImVec2(ImGui::GetFontSize() * 15, 0))
-                            .LabelPosition(LabelPositions::None));
-        ImGui::SameLine();
-        ImGui::Text(":");
-        ImGui::SameLine();
-        CVarInputInt("##PortSail", CVAR_REMOTE_SAIL("Port"),
-                     InputOptions()
-                         .Color(THEME_COLOR)
-                         .PlaceholderText("43384")
-                         .DefaultValue("43384")
-                         .Size(ImVec2(ImGui::GetFontSize() * 5, 0))
-                         .LabelPosition(LabelPositions::None));
-        ImGui::EndDisabled();
-    });
+    AddWidget(path, "Host & Port", WIDGET_CUSTOM)
+        .NativePage([] { return NativeOptions::RegisteredPage("Network/Sail/Host & Port"); }, NativeOptions::Text("host_port"));
     AddWidget(path, "Enable##Sail", WIDGET_BUTTON)
         .PreFunc([](WidgetInfo& info) {
             std::string host = CVarGetString(CVAR_REMOTE_SAIL("Host"), "127.0.0.1");
@@ -117,28 +99,8 @@ void SohMenu::AddMenuNetwork() {
               WIDGET_TEXT);
 
     AddWidget(path, "Connect to Crowd Control", WIDGET_SEPARATOR_TEXT);
-    AddWidget(path, "Host & Port", WIDGET_CUSTOM).CustomFunction([](WidgetInfo& info) {
-        ImGui::BeginDisabled(CrowdControl::Instance->isEnabled || CVarGetInteger(CVAR_SETTING("DisableChanges"), 0));
-        ImGui::Text("%s", info.name.c_str());
-        CVarInputString("##HostCrowdControl", CVAR_REMOTE_CROWD_CONTROL("Host"),
-                        InputOptions()
-                            .Color(THEME_COLOR)
-                            .PlaceholderText("127.0.0.1")
-                            .DefaultValue("127.0.0.1")
-                            .Size(ImVec2(ImGui::GetFontSize() * 15, 0))
-                            .LabelPosition(LabelPositions::None));
-        ImGui::SameLine();
-        ImGui::Text(":");
-        ImGui::SameLine();
-        CVarInputInt("##PortCrowdControl", CVAR_REMOTE_CROWD_CONTROL("Port"),
-                     InputOptions()
-                         .Color(THEME_COLOR)
-                         .PlaceholderText("43384")
-                         .DefaultValue("43384")
-                         .Size(ImVec2(ImGui::GetFontSize() * 5, 0))
-                         .LabelPosition(LabelPositions::None));
-        ImGui::EndDisabled();
-    });
+    AddWidget(path, "Host & Port", WIDGET_CUSTOM)
+        .NativePage([] { return NativeOptions::RegisteredPage("Network/Crowd Control/Host & Port"); }, NativeOptions::Text("host_port"));
     AddWidget(path, "Enable##CrowdControl", WIDGET_BUTTON)
         .PreFunc([](WidgetInfo& info) {
             std::string host = CVarGetString(CVAR_REMOTE_CROWD_CONTROL("Host"), "127.0.0.1");

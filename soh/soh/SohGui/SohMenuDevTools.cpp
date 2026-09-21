@@ -1,11 +1,12 @@
 #include "SohMenu.h"
 #include "SohGui.hpp"
+#include "soh/NativeOptions/NativeOptions.h"
 
 extern "C" {
 extern PlayState* gPlayState;
 }
 
-void WarpPointsWidget(WidgetInfo& info);
+NativeOptions::PagePtr WarpPointsPage();
 
 namespace SohGui {
 
@@ -38,9 +39,6 @@ void SohMenu::AddMenuDevTools() {
     AddSidebarEntry("Dev Tools", "General", 3);
     WidgetPath path = { "Dev Tools", "General", SECTION_COLUMN_1 };
 
-    AddWidget(path, "Popout Menu", WIDGET_CVAR_CHECKBOX)
-        .CVar("gSettings.Menu.Popout")
-        .Options(CheckboxOptions().Tooltip("Changes the menu display from overlay to windowed."));
     AddWidget(path, "Debug Mode", WIDGET_CVAR_CHECKBOX)
         .CVar(CVAR_DEVELOPER_TOOLS("DebugEnabled"))
         .Options(
@@ -79,39 +77,27 @@ void SohMenu::AddMenuDevTools() {
         .CVar(CVAR_DEVELOPER_TOOLS("ResourceLogging"))
         .Options(CheckboxOptions().Tooltip("Logs some resources as XML when they're loaded in binary format."));
 
-    AddWidget(path, "Frame Advance", WIDGET_CHECKBOX)
-        .Options(CheckboxOptions().Tooltip(
-            "This allows you to advance through the game one frame at a time on command. "
-            "To advance a frame, hold Z and tap R on the second controller. Holding Z "
-            "and R will advance a frame every half second. You can also use the buttons below."))
+    AddWidget(path, "Frame Advance", WIDGET_CUSTOM)
+        .NativePage([] {
+            namespace N = NativeOptions;
+            return N::MakePage("frame_advance", N::Text("frame_advance"), [] {
+                std::vector<N::Row> rows;
+                if (!gPlayState || !CVarGetInteger(CVAR_DEVELOPER_TOOLS("DebugEnabled"), 0)) return rows;
+                rows.push_back(N::Toggle("enabled", N::Text("frame_advance"), gPlayState->frameAdvCtx.enabled != 0,
+                    [](bool value) { if (gPlayState) gPlayState->frameAdvCtx.enabled = value; }, N::Text("frame_advance_help")));
+                const auto advance = [] { CVarSetInteger(CVAR_DEVELOPER_TOOLS("FrameAdvanceTick"), 1); };
+                rows.push_back(N::Action("single", N::Text("advance_one"), advance, N::Text("advance_one_help")));
+                auto hold = N::Action("hold", N::Text("advance_hold"), advance, N::Text("advance_hold_help"));
+                hold.held = advance;
+                rows.push_back(std::move(hold));
+                rows[1].enabled = rows[2].enabled = gPlayState->frameAdvCtx.enabled != 0;
+                if (CVarGetInteger(CVAR_SETTING("DisableChanges"), 0)) N::Disable(rows, N::Text("race_disabled"));
+                return rows;
+            });
+        }, NativeOptions::Text("frame_advance"))
         .PreFunc([](WidgetInfo& info) {
-            info.isHidden = mSohMenu->disabledMap.at(DISABLE_FOR_NULL_PLAY_STATE).active ||
-                            mSohMenu->disabledMap.at(DISABLE_FOR_DEBUG_MODE_OFF).active;
-            if (gPlayState != nullptr) {
-                info.valuePointer = (bool*)&gPlayState->frameAdvCtx.enabled;
-            } else {
-                info.valuePointer = (bool*)nullptr;
-            }
+            info.isHidden = !gPlayState || !CVarGetInteger(CVAR_DEVELOPER_TOOLS("DebugEnabled"), 0);
         });
-    AddWidget(path, "Advance 1", WIDGET_BUTTON)
-        .Options(ButtonOptions().Tooltip("Advance 1 frame.").Size(Sizes::Inline))
-        .Callback([](WidgetInfo& info) { CVarSetInteger(CVAR_DEVELOPER_TOOLS("FrameAdvanceTick"), 1); })
-        .PreFunc([](WidgetInfo& info) {
-            info.isHidden = mSohMenu->disabledMap.at(DISABLE_FOR_FRAME_ADVANCE_OFF).active ||
-                            mSohMenu->disabledMap.at(DISABLE_FOR_DEBUG_MODE_OFF).active;
-        });
-    AddWidget(path, "Advance (Hold)", WIDGET_BUTTON)
-        .Options(ButtonOptions().Tooltip("Advance frames while the button is held.").Size(Sizes::Inline))
-        .PreFunc([](WidgetInfo& info) {
-            info.isHidden = mSohMenu->disabledMap.at(DISABLE_FOR_FRAME_ADVANCE_OFF).active ||
-                            mSohMenu->disabledMap.at(DISABLE_FOR_DEBUG_MODE_OFF).active;
-        })
-        .PostFunc([](WidgetInfo& info) {
-            if (ImGui::IsItemActive()) {
-                CVarSetInteger(CVAR_DEVELOPER_TOOLS("FrameAdvanceTick"), 1);
-            }
-        })
-        .SameLine(true);
     AddWidget(path, "Log Level", WIDGET_CVAR_COMBOBOX)
         .CVar(CVAR_DEVELOPER_TOOLS("LogLevel"))
         .Options(ComboboxOptions()
@@ -136,7 +122,7 @@ void SohMenu::AddMenuDevTools() {
         .Options(CheckboxOptions()
                      .Tooltip("Translate the Debug Warp Screen based on the game language.")
                      .DefaultValue(true));
-    AddWidget(path, "Warp Points", WIDGET_CUSTOM).CustomFunction(WarpPointsWidget).HideInSearch(true);
+    AddWidget(path, "Warp Points", WIDGET_CUSTOM).NativePage(WarpPointsPage, "Warp Points");
 
     // Stats
     path.sidebarName = "Stats";
@@ -145,7 +131,6 @@ void SohMenu::AddMenuDevTools() {
         .CVar(CVAR_WINDOW("SohStats"))
         .RaceDisable(false)
         .WindowName("Stats##Soh")
-        .HideInSearch(true)
         .Options(WindowButtonOptions().Tooltip("Enables the separate Stats Window."));
 
     // Console
@@ -154,7 +139,6 @@ void SohMenu::AddMenuDevTools() {
     AddWidget(path, "Popout Console", WIDGET_WINDOW_BUTTON)
         .CVar(CVAR_WINDOW("SohConsole"))
         .WindowName("Console##SoH")
-        .HideInSearch(true)
         .Options(WindowButtonOptions().Tooltip("Enables the separate Console Window."));
 
     // Save Editor
@@ -163,7 +147,6 @@ void SohMenu::AddMenuDevTools() {
     AddWidget(path, "Popout Save Editor", WIDGET_WINDOW_BUTTON)
         .CVar(CVAR_WINDOW("SaveEditor"))
         .WindowName("Save Editor")
-        .HideInSearch(true)
         .Options(WindowButtonOptions().Tooltip("Enables the separate Save Editor Window."));
 
     // Hook Debugger
@@ -172,7 +155,6 @@ void SohMenu::AddMenuDevTools() {
     AddWidget(path, "Popout Hook Debugger", WIDGET_WINDOW_BUTTON)
         .CVar(CVAR_WINDOW("HookDebugger"))
         .WindowName("Hook Debugger")
-        .HideInSearch(true)
         .Options(WindowButtonOptions().Tooltip("Enables the separate Hook Debugger Window."));
 
     // Collision Viewer
@@ -181,7 +163,6 @@ void SohMenu::AddMenuDevTools() {
     AddWidget(path, "Popout Collision Viewer", WIDGET_WINDOW_BUTTON)
         .CVar(CVAR_WINDOW("CollisionViewer"))
         .WindowName("Collision Viewer")
-        .HideInSearch(true)
         .Options(WindowButtonOptions().Tooltip("Enables the separate Collision Viewer Window."));
 
     // Actor Viewer
@@ -190,7 +171,6 @@ void SohMenu::AddMenuDevTools() {
     AddWidget(path, "Popout Actor Viewer", WIDGET_WINDOW_BUTTON)
         .CVar(CVAR_WINDOW("ActorViewer"))
         .WindowName("Actor Viewer")
-        .HideInSearch(true)
         .Options(WindowButtonOptions().Tooltip("Enables the separate Actor Viewer Window."));
 
     // Display List Viewer
@@ -199,7 +179,6 @@ void SohMenu::AddMenuDevTools() {
     AddWidget(path, "Popout Display List Viewer", WIDGET_WINDOW_BUTTON)
         .CVar(CVAR_WINDOW("DisplayListViewer"))
         .WindowName("Display List Viewer")
-        .HideInSearch(true)
         .Options(WindowButtonOptions().Tooltip("Enables the separate Display List Viewer Window."));
 
     // Value Viewer
@@ -208,7 +187,6 @@ void SohMenu::AddMenuDevTools() {
     AddWidget(path, "Popout Value Viewer", WIDGET_WINDOW_BUTTON)
         .CVar(CVAR_WINDOW("ValueViewer"))
         .WindowName("Value Viewer")
-        .HideInSearch(true)
         .Options(WindowButtonOptions().Tooltip("Enables the separate Value Viewer Window."));
 
     // Message Viewer
@@ -217,7 +195,6 @@ void SohMenu::AddMenuDevTools() {
     AddWidget(path, "Popout Message Viewer", WIDGET_WINDOW_BUTTON)
         .CVar(CVAR_WINDOW("MessageViewer"))
         .WindowName("Message Viewer")
-        .HideInSearch(true)
         .Options(WindowButtonOptions().Tooltip("Enables the separate Message Viewer Window."));
 
     // Gfx Debugger
@@ -226,7 +203,6 @@ void SohMenu::AddMenuDevTools() {
     AddWidget(path, "Popout Gfx Debugger", WIDGET_WINDOW_BUTTON)
         .CVar(CVAR_WINDOW("SohGfxDebugger"))
         .WindowName("GfxDebugger##SoH")
-        .HideInSearch(true)
         .Options(WindowButtonOptions().Tooltip("Enables the separate Gfx Debugger Window."));
 }
 

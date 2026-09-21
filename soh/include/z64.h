@@ -928,7 +928,8 @@ typedef struct {
     // #region SOH [Randomizer]
     /* 0x02C0 */ u8     randoQuestMode; // 0 = Off (normal quest menu); 1 = On (Misc Collectibles menu)
     // #endregion
-} PauseContext; // size = 0x2C1
+    u8 optionsTab; // Virtual fifth tab; pageIndex retains the underlying native page.
+} PauseContext;
 
 typedef enum {
     /* 00 */ GAMEOVER_INACTIVE,

@@ -37,6 +37,11 @@ class SohMenu : public Ship::Menu {
     void DrawElement() override;
     void UpdateElement() override;
     void Draw() override;
+    void DrawGameOverlay(ImVec2 position, ImVec2 size) override;
+    bool UsesGamepadInput() const override { return true; }
+    bool CapturesKeyboardInput() const override { return mIsVisible; }
+    bool HandleMenuToggle() override;
+    bool HidesGameOverlays() const override;
 
     void AddSidebarEntry(std::string sectionName, std::string sidbarName, uint32_t columnCount);
     WidgetInfo& AddWidget(WidgetPath& pathInfo, std::string widgetName, WidgetType widgetType);
@@ -48,10 +53,6 @@ class SohMenu : public Ship::Menu {
     void AddMenuNetwork();
     static void UpdateLanguageMap(std::map<int32_t, const char*>& languageMap);
 
-  private:
-    char mGitCommitHashTruncated[8];
-    bool mIsTaggedVersion;
-    bool mMenuElementsInitialized = false;
 };
 } // namespace SohGui
 

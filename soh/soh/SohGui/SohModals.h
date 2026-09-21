@@ -1,21 +1,15 @@
 #pragma once
-
-#include <libultraship/libultraship.h>
-#include <ship/window/gui/GuiMenuBar.h>
-#include <ship/window/gui/GuiElement.h>
-
-class SohModalWindow final : public Ship::GuiWindow {
-  public:
-    using GuiWindow::GuiWindow;
-    void Draw() override;
-
-    void InitElement() override{};
-    void DrawElement() override;
-    void UpdateElement() override{};
-    void RegisterPopup(std::string title, std::string message, std::string button1 = "OK", std::string button2 = "",
-                       std::function<void()> button1callback = nullptr,
-                       std::function<void()> button2callback = nullptr);
-    bool IsPopupOpen(std::string title);
-    size_t PopupsQueued();
-    void DismissPopup();
-};
+#include <cstddef>
+#include <functional>
+#include <string>
+namespace SohGui {
+void RegisterPopup(std::string title, std::string message, std::string button1 = "OK", std::string button2 = "",
+                   std::function<void()> button1callback = nullptr, std::function<void()> button2callback = nullptr);
+size_t PopupsQueued();
+bool DismissPopup(std::string title);
+// Called from the game-state update, before native Options input is processed.
+bool UpdateNativePopups();
+// ROM setup cannot use game fonts or panels before extraction finishes.
+void DrawSetupPopups();
+void ClearNativePopups();
+}

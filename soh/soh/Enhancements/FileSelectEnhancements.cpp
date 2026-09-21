@@ -1,7 +1,7 @@
 ﻿#include "FileSelectEnhancements.h"
 
 #include "soh/OTRGlobals.h"
-#include "soh/SohGui/SohModals.h"
+#include "soh/NativeOptions/NativeOptions.h"
 #include "soh/SohGui/SohGui.hpp"
 
 #include <array>
@@ -69,9 +69,7 @@ const char* SohFileSelect_GetSettingText(uint8_t optionIndex, uint8_t language) 
 }
 
 void SohFileSelect_ShowPresetMenu() {
-    SohGui::ShowEscMenu();
-    CVarSetString(CVAR_SETTING("Menu.ActiveHeader"), "Settings");
-    CVarSetString(CVAR_SETTING("Menu.SettingsSidebarSection"), "Presets");
+    NativeOptions::RequestPage("Presets");
     CVarSetInteger(CVAR_GENERAL("HasSeenPresetModal"), 1);
 }
 
@@ -83,12 +81,8 @@ void SohFileSelect_ShowPresetModal() {
     if (CVarGetInteger(CVAR_GENERAL("HasSeenPresetModal"), 0)) {
         return;
     }
-    std::shared_ptr<SohModalWindow> modal = static_pointer_cast<SohModalWindow>(
-        Ship::Context::GetInstance()->GetWindow()->GetGui()->GetGuiWindow("Modal Window"));
-    if (modal->IsPopupOpen("Take a look at our presets!")) {
-        modal->DismissPopup();
-    } else {
-        modal->RegisterPopup("Take a look at our presets!",
+    if (!SohGui::DismissPopup("Take a look at our presets!")) {
+        SohGui::RegisterPopup("Take a look at our presets!",
                              "\nHey there! Ship comes with a ton of options, but none of them are on by default,\n"
                              "even in randomizer. If you haven't already, we highly recommend applying the\n"
                              "\"Enhancements - Curated Randomizer\" preset for a great, curated out of the\n"

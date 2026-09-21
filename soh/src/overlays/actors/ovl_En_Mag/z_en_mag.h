@@ -31,7 +31,11 @@ typedef struct EnMag {
     /* 0xE31C */ s32 unk_E31C;
     /* 0xE320 */ s32 unk_E320;
     /* 0xE324 */ char unk_E324[0x0004];
-} EnMag; // size = 0xE328
+    u8 speechFlags;
+    u8 optionsSelected;
+    u8 menuStickHeld;
+    u8 returningFromOptions;
+} EnMag; // Original N64 size = 0xE328; the port allocates sizeof(EnMag).
 
 typedef enum {
     /* 0x00 */ MAG_STATE_INITIAL,

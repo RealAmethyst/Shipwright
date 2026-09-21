@@ -1,6 +1,7 @@
 ﻿#include "file_choose.h"
 
 #include <string.h>
+#include "soh/NativeOptions/NativeOptions.h"
 #include <stdio.h>
 
 #include "textures/title_static/title_static.h"
@@ -451,8 +452,10 @@ void FileChoose_UpdateMainMenu(GameState* thisx) {
             }
         } else {
             if (this->warningLabel == FS_WARNING_NONE) {
-                Audio_PlaySoundGeneral(NA_SE_SY_FSEL_DECIDE_L, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale,
-                                       &gSfxDefaultFreqAndVolScale, &gSfxDefaultReverb);
+                if (this->buttonIndex == FS_BTN_MAIN_COPY || this->buttonIndex == FS_BTN_MAIN_ERASE) {
+                    Audio_PlaySoundGeneral(NA_SE_SY_FSEL_DECIDE_L, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale,
+                                           &gSfxDefaultFreqAndVolScale, &gSfxDefaultReverb);
+                }
                 this->prevConfigMode = this->configMode;
 
                 if (this->buttonIndex == FS_BTN_MAIN_COPY) {
@@ -462,13 +465,7 @@ void FileChoose_UpdateMainMenu(GameState* thisx) {
                     this->configMode = CM_SETUP_ERASE_SELECT;
                     this->nextTitleLabel = FS_TITLE_ERASE_FILE;
                 } else {
-                    this->configMode = CM_MAIN_TO_OPTIONS;
-                    this->kbdButton = 0;
-                    this->kbdX = 0;
-                    this->kbdY = 0;
-                    this->charBgAlpha = 0;
-                    this->newFileNameCharCount = 0;
-                    this->nameEntryBoxPosX = 120;
+                    NativeOptions_Open();
                 }
 
                 sLastFileChooseButtonIndex = -1;
@@ -2868,6 +2865,7 @@ void FileChoose_Main(GameState* thisx) {
 
     FileChoose_PulsateCursor(&this->state);
     gFileSelectUpdateFuncs[this->menuMode](&this->state);
+    GameInteractor_ExecuteOnFileSelectUpdate(this);
     FrameInterpolation_StartRecord();
     gFileSelectDrawFuncs[this->menuMode](&this->state);
     FrameInterpolation_StopRecord();
@@ -3097,6 +3095,7 @@ void FileChoose_InitContext(GameState* thisx) {
 }
 
 void FileChoose_Destroy(GameState* thisx) {
+    GameInteractor_ExecuteOnFileSelectClose();
 }
 
 void FileChoose_Init(GameState* thisx) {

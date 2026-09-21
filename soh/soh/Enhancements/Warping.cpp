@@ -3,7 +3,7 @@
 #include "soh/Enhancements/game-interactor/GameInteractor_Hooks.h"
 #include "soh/ShipInit.hpp"
 #include "functions.h"
-#include "soh/SohGui/MenuTypes.h"
+#include "soh/NativeOptions/NativeOptions.h"
 #include "soh/util.h"
 
 extern "C" {
@@ -98,82 +98,66 @@ void Warp(WarpPoint& warpPoint) {
 
 static std::string warpNameInput = "";
 
-void WarpPointsWidget(WidgetInfo& info) {
-    ImGui::SeparatorText("Warp Points");
-    if (gPlayState != NULL && GET_PLAYER(gPlayState) != NULL) {
-        UIWidgets::InputString("##WarpPointNameInput", &warpNameInput,
-                               {
-                                   .size = ImVec2(ImGui::GetContentRegionAvail().x - 50.0f, 0.0f),
-                                   .placeholder = "Enter warp point name...",
-                               });
-
-        ImGui::SameLine();
-        bool isEmpty = warpNameInput.empty();
-        if (isEmpty) {
-            ImGui::BeginDisabled();
-        }
-
-        if (UIWidgets::Button(ICON_FA_PLUS)) {
-            Player* player = GET_PLAYER(gPlayState);
-
-            std::string warpName = SohUtils::GetSceneName(gPlayState->sceneNum);
-            if (gPlayState->roomCtx.curRoom.num != 0) {
-                warpName += " (" + std::to_string(gPlayState->roomCtx.curRoom.num) + ")";
-            }
-
-            warpPoints[warpNameInput] = WarpPoint{
-                .entranceId = gSaveContext.entranceIndex,
-                .roomNum = gPlayState->roomCtx.curRoom.num,
-                .pos = player->actor.world.pos,
-                .rotY = player->actor.shape.rot.y,
+NativeOptions::PagePtr WarpPointsPage() {
+    namespace N = NativeOptions;
+    return N::MakePage("advanced/warp", N::Text("warp_points"), [] {
+        std::vector<N::Row> rows;
+        rows.push_back(N::String("name", N::Text("warp_name"), warpNameInput,
+                                [](std::string value) { warpNameInput = std::move(value); }));
+        auto add = N::Action("add", N::Text("warp_add"), [] {
+            const auto save = [] {
+                if (!gPlayState || !GET_PLAYER(gPlayState) || warpNameInput.empty()) return;
+                auto* player = GET_PLAYER(gPlayState);
+                warpPoints[warpNameInput] = WarpPoint{gSaveContext.entranceIndex, gPlayState->roomCtx.curRoom.num,
+                                                     player->actor.world.pos, player->actor.shape.rot.y, false};
+                SaveConfig();
+                warpNameInput.clear();
             };
-            SaveConfig();
-            warpNameInput = "";
+            if (warpPoints.contains(warpNameInput))
+                N::Confirm(N::Text("warp_add"), warpNameInput, N::Text("replace"), save);
+            else save();
+        });
+        add.enabled = gPlayState && GET_PLAYER(gPlayState) && !warpNameInput.empty();
+        rows.push_back(std::move(add));
+        for (const auto& [name, point] : warpPoints) {
+            auto row = N::Link("point/" + name, name, [name] {
+                return N::MakePage("warp/" + name, name, [name] {
+                    std::vector<N::Row> controls;
+                    const auto found = warpPoints.find(name);
+                    if (found == warpPoints.end()) return controls;
+                    auto warp = N::Action("warp", N::Text("warp"), [name] {
+                        const auto current = warpPoints.find(name);
+                        if (gPlayState && current != warpPoints.end()) {
+                            Warp(current->second);
+                            N::GetModel().Close();
+                        }
+                    });
+                    warp.enabled = gPlayState != nullptr;
+                    controls.push_back(std::move(warp));
+                    controls.push_back(N::Toggle("boot", N::Text("warp_boot"), found->second.bootToPoint, [name](bool value) {
+                        if (value) {
+                            for (auto& entry : warpPoints) entry.second.bootToPoint = false;
+                        }
+                        if (auto current = warpPoints.find(name); current != warpPoints.end())
+                            current->second.bootToPoint = value;
+                        SaveConfig();
+                    }));
+                    controls.push_back(N::Action("delete", N::Text("delete"), [name] {
+                        N::Confirm(N::Text("delete"), name, N::Text("delete"), [name] {
+                            warpPoints.erase(name);
+                            SaveConfig();
+                            N::GetModel().Back();
+                        });
+                    }));
+                    return controls;
+                });
+            });
+            if (point.bootToPoint) row.value = N::Text("warp_boot_marker");
+            rows.push_back(std::move(row));
         }
-        if (isEmpty) {
-            ImGui::EndDisabled();
-        }
-    }
-    // List of warp points, showing just their name, a button to warp and a button to delete
-    for (auto it = warpPoints.begin(); it != warpPoints.end();) {
-        ImGui::PushID(it->first.c_str());
-
-        ImGui::AlignTextToFramePadding();
-        ImGui::Text("%s", it->first.c_str());
-        if (it->second.bootToPoint) {
-            ImGui::SameLine();
-            ImGui::TextColored(ImVec4(0.85f, 0.55f, 0.0f, 1.0f), "[Boot]");
-        }
-        ImGui::SameLine(ImGui::GetContentRegionAvail().x - 115.0f);
-        if (gPlayState == NULL)
-            ImGui::BeginDisabled();
-        if (UIWidgets::Button(ICON_FA_PLANE, { .size = UIWidgets::Sizes::Inline })) {
-            // Warp to this point
-            Warp(it->second);
-        }
-        if (gPlayState == NULL)
-            ImGui::EndDisabled();
-        ImGui::SameLine();
-        if (UIWidgets::Button(ICON_FA_REFRESH,
-                              { .size = UIWidgets::Sizes::Inline, .color = UIWidgets::Colors::Orange })) {
-            for (auto& wp : warpPoints) {
-                wp.second.bootToPoint = false;
-            }
-            it->second.bootToPoint = true;
-            SaveConfig();
-        }
-        ImGui::SameLine();
-        if (UIWidgets::Button(ICON_FA_TRASH, { .size = UIWidgets::Sizes::Inline, .color = UIWidgets::Colors::Red })) {
-            it = warpPoints.erase(it);
-            SaveConfig();
-            ImGui::PopID();
-            continue;
-            ;
-        }
-        ImGui::PopID();
-
-        ++it;
-    }
+        if (CVarGetInteger(CVAR_SETTING("DisableChanges"), 0)) N::Disable(rows, N::Text("race_disabled"));
+        return rows;
+    });
 }
 
 void RegisterWarping() {

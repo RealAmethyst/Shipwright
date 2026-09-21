@@ -122,6 +122,7 @@ void KaleidoSetup_Init(PlayState* play) {
     pauseCtx->cursorSpecialPos = 0;
 
     pauseCtx->randoQuestMode = 0;
+    pauseCtx->optionsTab = false;
 
     View_Init(&pauseCtx->view, play->state.gfxCtx);
 }

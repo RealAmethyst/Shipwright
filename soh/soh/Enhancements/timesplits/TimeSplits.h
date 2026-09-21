@@ -16,14 +16,6 @@ class TimeSplitWindow final : public Ship::GuiWindow {
     void UpdateElement() override{};
 };
 
-typedef enum SplitAction {
-    SPLIT_ACTION_SAVE,
-    SPLIT_ACTION_LOAD,
-    SPLIT_ACTION_UPDATE,
-    SPLIT_ACTION_COLLECT,
-    SPLIT_ACTION_DELETE
-} SplitAction;
-
 typedef enum SplitStatus {
     SPLIT_STATUS_ACTIVE,
     SPLIT_STATUS_INACTIVE,

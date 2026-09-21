@@ -5,6 +5,7 @@
 #include "soh/Enhancements/game-interactor/GameInteractor.h"
 #include "soh/Enhancements/game-interactor/GameInteractor_Hooks.h"
 #include "soh/ResourceManagerHelpers.h"
+#include "soh/NativeOptions/NativeOptions.h"
 
 #include "message_data_static.h"
 extern MessageTableEntry* sNesMessageEntryTablePtr;
@@ -265,9 +266,15 @@ void GameState_Update(GameState* gameState) {
 
     GameState_SetFrameBuffer(gfxCtx);
 
-    GameInteractor_ExecuteOnGameStateMainStart();
-
-    gameState->main(gameState);
+    const s32 optionsOpen = NativeOptions_Update(gameState);
+    const s32 advanceFrame = optionsOpen && NativeOptions_AdvanceFrame(gameState);
+    if (!optionsOpen || advanceFrame) {
+        GameInteractor_ExecuteOnGameStateMainStart();
+        gameState->main(gameState);
+    }
+    if (optionsOpen) {
+        NativeOptions_Draw(gfxCtx);
+    }
 
     func_800C4344(gameState);
 
@@ -353,8 +360,10 @@ void GameState_Update(GameState* gameState) {
         gSaveContext.language = LANGUAGE_ENG;
     }
 
-    GameInteractor_ExecuteOnGameFrameUpdate();
-    gameState->frames++;
+    if (!optionsOpen || advanceFrame) {
+        GameInteractor_ExecuteOnGameFrameUpdate();
+        gameState->frames++;
+    }
 }
 
 void GameState_InitArena(GameState* gameState, size_t size) {

@@ -14,5 +14,4 @@ enum PresetSection {
     PRESET_SECTION_MAX,
 };
 
-void DrawPresetSelector(std::vector<PresetSection> includeSections, std::string currentIndex, bool disabled);
 void applyPreset(std::string presetName, std::vector<PresetSection> includeSections = {});

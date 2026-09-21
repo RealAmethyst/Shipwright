@@ -22,6 +22,9 @@ typedef enum {
 } DisableOption;
 
 struct WidgetInfo;
+namespace NativeOptions {
+struct Page;
+}
 struct disabledInfo;
 using VoidFunc = std::function<void()>;
 using DisableInfoFunc = std::function<bool(disabledInfo&)>;
@@ -87,32 +90,27 @@ using OptionsVariant = std::variant<UIWidgets::ButtonOptions, UIWidgets::Checkbo
 // `callback` is a lambda used for running code on widget change. may need `SohGui::GetMenu()` for specific menu actions
 // `preFunc` is a lambda called before drawing code starts. It can be used to determine a widget's status,
 // whether disabled or hidden, as well as update pointers for non-CVar widget types.
-// `postFunc` is a lambda called after all drawing code is finished, for reacting to states other than
-// widgets having been changed, like holding buttons.
-// All three lambdas accept a `widgetInfo` reference in case it needs information on the widget for these operations
 // `activeDisables` is a vector of DisableOptions for specifying what reasons a widget is disabled, which are displayed
 // in the disabledTooltip for the widget. Can display multiple reasons. Handling the reasons is done in `preFunc`.
 // It is recommended to utilize `disabledInfo`/`DisableReason` to list out all reasons for disabling and isHidden so
 // the info can be shown.
 // `windowName` is what is displayed and searched for `windowButton` type and window interactions
 // `isHidden` just prevents the widget from being drawn under whatever circumstances you specify in the `preFunc`
-// `sameLine` allows for specifying that the widget should be on the same line as the previous widget
 struct WidgetInfo {
     std::string name; // Used by all widgets
-    const char* cVar; // Used by all widgets except
+    const char* cVar = nullptr; // Absent for actions and descriptive entries.
     WidgetType type;
     std::shared_ptr<UIWidgets::WidgetOptions> options;
     std::variant<bool*, int32_t*, float*> valuePointer;
     WidgetFunc callback = nullptr;
     WidgetFunc preFunc = nullptr;
-    WidgetFunc postFunc = nullptr;
-    WidgetFunc customFunction = nullptr;
+    std::function<std::shared_ptr<NativeOptions::Page>()> nativePage;
+    std::string nativeTitle;
+    std::map<int, std::string> nativeChoices;
     DisableVec activeDisables = {};
     const char* windowName = "";
     bool isHidden = false;
-    bool sameLine = false;
     bool raceDisable = true;
-    bool hideInSearch = false;
 
     WidgetInfo& CVar(const char* cVar_) {
         cVar = cVar_;
@@ -183,11 +181,6 @@ struct WidgetInfo {
         return *this;
     }
 
-    WidgetInfo& PostFunc(WidgetFunc postFunc_) {
-        postFunc = postFunc_;
-        return *this;
-    }
-
     WidgetInfo& WindowName(const char* windowName_) {
         windowName = windowName_;
         return *this;
@@ -198,23 +191,14 @@ struct WidgetInfo {
         return *this;
     }
 
-    WidgetInfo& SameLine(bool sameLine_) {
-        sameLine = sameLine_;
-        return *this;
-    }
-
-    WidgetInfo& CustomFunction(WidgetFunc customFunction_) {
-        customFunction = customFunction_;
+    WidgetInfo& NativePage(std::function<std::shared_ptr<NativeOptions::Page>()> factory, std::string title) {
+        nativePage = std::move(factory);
+        nativeTitle = std::move(title);
         return *this;
     }
 
     WidgetInfo& RaceDisable(bool disable) {
         raceDisable = disable;
-        return *this;
-    }
-
-    WidgetInfo& HideInSearch(bool hide) {
-        hideInSearch = hide;
         return *this;
     }
 
@@ -283,13 +267,6 @@ struct MenuInit {
         return menuInitFuncs;
     }
 
-    static std::unordered_map<std::string, std::unordered_map<std::string, std::vector<std::function<void()>>>>&
-    GetUpdateFuncs() {
-        static std::unordered_map<std::string, std::unordered_map<std::string, std::vector<std::function<void()>>>>
-            menuUpdateFuncs;
-        return menuUpdateFuncs;
-    }
-
     static void InitAll() {
         auto& menuInitFuncs = MenuInit::GetInitFuncs();
         for (const auto& initFunc : menuInitFuncs) {
@@ -321,14 +298,6 @@ struct RegisterMenuInitFunc {
         auto& menuInitFuncs = MenuInit::GetInitFuncs();
 
         menuInitFuncs.push_back(initFunc);
-    }
-};
-
-struct RegisterMenuUpdateFunc {
-    RegisterMenuUpdateFunc(std::function<void()> updateFunc, std::string sectionName, std::string sidebarName) {
-        auto& menuUpdateFuncs = MenuInit::GetUpdateFuncs();
-
-        menuUpdateFuncs[sectionName][sidebarName].push_back(updateFunc);
     }
 };
 

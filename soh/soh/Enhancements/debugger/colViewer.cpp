@@ -1,5 +1,5 @@
 #include "colViewer.h"
-#include "soh/SohGui/UIWidgets.hpp"
+#include "soh/NativeOptions/NativeOptions.h"
 #include "soh/SohGui/SohGui.hpp"
 
 #include <vector>
@@ -25,20 +25,8 @@ static std::map<int32_t, const char*> ColRenderSettingNames = {
     { ColRenderTransparent, "Transparent" },
 };
 
-ImVec4 scene_col;
-ImVec4 hookshot_col;
-ImVec4 entrance_col;
-ImVec4 specialSurface_col;
-ImVec4 interactable_col;
-ImVec4 slope_col;
-ImVec4 void_col;
 
-ImVec4 oc_col;
-ImVec4 ac_col;
-ImVec4 at_col;
 
-ImVec4 waterbox_col;
-ImVec4 scarecrow_col;
 
 static std::vector<Gfx> opaDl;
 static std::vector<Gfx> xluDl;
@@ -52,99 +40,43 @@ static std::vector<Vtx> cylinderVtx;
 static std::vector<Gfx> sphereGfx;
 static std::vector<Vtx> sphereVtx;
 
-using namespace UIWidgets;
 
-// Draws the ImGui window for the collision viewer
-void ColViewerWindow::DrawElement() {
-    ImGui::BeginDisabled(CVarGetInteger(CVAR_SETTING("DisableChanges"), 0));
-    CheckboxOptions checkOpt = CheckboxOptions().Color(THEME_COLOR);
-    ComboboxOptions comboOpt = ComboboxOptions().Color(THEME_COLOR);
-    CVarCheckbox("Enabled", CVAR_DEVELOPER_TOOLS("ColViewer.Enabled"), checkOpt);
-
-    CVarCombobox("Scene", CVAR_DEVELOPER_TOOLS("ColViewer.Scene"), ColRenderSettingNames, comboOpt);
-    CVarCombobox("Bg Actors", CVAR_DEVELOPER_TOOLS("ColViewer.BGActors"), ColRenderSettingNames, comboOpt);
-    CVarCombobox("Col Check", CVAR_DEVELOPER_TOOLS("ColViewer.ColCheck"), ColRenderSettingNames, comboOpt);
-    CVarCombobox("Waterbox", CVAR_DEVELOPER_TOOLS("ColViewer.Waterbox"), ColRenderSettingNames, comboOpt);
-    CVarCombobox("Scarecrow Spawn", CVAR_DEVELOPER_TOOLS("ColViewer.ScarecrowSpawn"), ColRenderSettingNames, comboOpt);
-
-    CVarCheckbox("Apply as decal", CVAR_DEVELOPER_TOOLS("ColViewer.Decal"),
-                 checkOpt.DefaultValue(true).Tooltip(
-                     "Applies the collision as a decal display. This can be useful if there is z-fighting occuring "
-                     "with the scene geometry, but can cause other artifacts."));
-    CVarCheckbox("Shaded", CVAR_DEVELOPER_TOOLS("ColViewer.Shaded"),
-                 checkOpt.DefaultValue(false).Tooltip("Applies the scene's shading to the collision display."));
-
-    // This has to be duplicated in both code paths due to the nature of ImGui::IsItemHovered()
-    const std::string colorHelpText = "View and change the colors used for collision display.";
-    PushStyleHeader(THEME_COLOR);
-    if (ImGui::TreeNode("Colors")) {
-        UIWidgets::Tooltip(colorHelpText.c_str());
-
-        if (CVarColorPicker("Normal", CVAR_DEVELOPER_TOOLS("ColViewer.ColorNormal"), { 255, 255, 255, 255 }, false,
-                            ColorPickerResetButton | ColorPickerRandomButton, THEME_COLOR)) {
-            scene_col =
-                VecFromRGBA8(CVarGetColor(CVAR_DEVELOPER_TOOLS("ColViewer.ColorNormal"), { 255, 255, 255, 255 }));
-        }
-        if (CVarColorPicker("Hookshot", CVAR_DEVELOPER_TOOLS("ColViewer.ColorHookshot"), { 128, 128, 255, 255 }, false,
-                            ColorPickerResetButton | ColorPickerRandomButton, THEME_COLOR)) {
-            hookshot_col =
-                VecFromRGBA8(CVarGetColor(CVAR_DEVELOPER_TOOLS("ColViewer.ColorHookshot"), { 128, 128, 255, 255 }));
-        }
-        if (CVarColorPicker("Entrance", CVAR_DEVELOPER_TOOLS("ColViewer.ColorEntrance"), { 0, 255, 0, 255 }, false,
-                            ColorPickerResetButton | ColorPickerRandomButton, THEME_COLOR)) {
-            entrance_col =
-                VecFromRGBA8(CVarGetColor(CVAR_DEVELOPER_TOOLS("ColViewer.ColorEntrance"), { 0, 255, 0, 255 }));
-        }
-        if (CVarColorPicker("Special Surface (Grass/Sand/Etc)", CVAR_DEVELOPER_TOOLS("ColViewer.ColorSpecialSurface"),
-                            { 192, 255, 192, 255 }, false, ColorPickerResetButton | ColorPickerRandomButton,
-                            THEME_COLOR)) {
-            specialSurface_col = VecFromRGBA8(
-                CVarGetColor(CVAR_DEVELOPER_TOOLS("ColViewer.ColorSpecialSurface"), { 192, 255, 192, 255 }));
-        }
-        if (CVarColorPicker("Interactable (Vines/Crawlspace/Etc)", CVAR_DEVELOPER_TOOLS("ColViewer.ColorInteractable"),
-                            { 192, 0, 192, 255 }, false, ColorPickerResetButton | ColorPickerRandomButton,
-                            THEME_COLOR)) {
-            interactable_col =
-                VecFromRGBA8(CVarGetColor(CVAR_DEVELOPER_TOOLS("ColViewer.ColorInteractable"), { 192, 0, 192, 255 }));
-        }
-        if (CVarColorPicker("Slope", CVAR_DEVELOPER_TOOLS("ColViewer.ColorSlope"), { 255, 255, 128, 255 }, false,
-                            ColorPickerResetButton | ColorPickerRandomButton, THEME_COLOR)) {
-            slope_col =
-                VecFromRGBA8(CVarGetColor(CVAR_DEVELOPER_TOOLS("ColViewer.ColorSlope"), { 255, 255, 128, 255 }));
-        }
-        if (CVarColorPicker("Void", CVAR_DEVELOPER_TOOLS("ColViewer.ColorVoid"), { 255, 0, 0, 255 }, false,
-                            ColorPickerResetButton | ColorPickerRandomButton, THEME_COLOR)) {
-            void_col = VecFromRGBA8(CVarGetColor(CVAR_DEVELOPER_TOOLS("ColViewer.ColorVoid"), { 255, 0, 0, 255 }));
-        }
-        if (CVarColorPicker("OC", CVAR_DEVELOPER_TOOLS("ColViewer.ColorOC"), { 255, 255, 255, 255 }, false,
-                            ColorPickerResetButton | ColorPickerRandomButton, THEME_COLOR)) {
-            oc_col = VecFromRGBA8(CVarGetColor(CVAR_DEVELOPER_TOOLS("ColViewer.ColorOC"), { 255, 255, 255, 255 }));
-        }
-        if (CVarColorPicker("AC", CVAR_DEVELOPER_TOOLS("ColViewer.ColorAC"), { 0, 0, 255, 255 }, false,
-                            ColorPickerResetButton | ColorPickerRandomButton, THEME_COLOR)) {
-            ac_col = VecFromRGBA8(CVarGetColor(CVAR_DEVELOPER_TOOLS("ColViewer.ColorAC"), { 0, 0, 255, 255 }));
-        }
-        if (CVarColorPicker("AT", CVAR_DEVELOPER_TOOLS("ColViewer.ColorAT"), { 255, 0, 0, 255 }, false,
-                            ColorPickerResetButton | ColorPickerRandomButton, THEME_COLOR)) {
-            at_col = VecFromRGBA8(CVarGetColor(CVAR_DEVELOPER_TOOLS("ColViewer.ColorAT"), { 255, 0, 0, 255 }));
-        }
-        if (CVarColorPicker("Waterbox", CVAR_DEVELOPER_TOOLS("ColViewer.ColorWaterbox"), { 0, 0, 255, 255 }, false,
-                            ColorPickerResetButton | ColorPickerRandomButton, THEME_COLOR)) {
-            waterbox_col =
-                VecFromRGBA8(CVarGetColor(CVAR_DEVELOPER_TOOLS("ColViewer.ColorWaterbox"), { 0, 0, 255, 255 }));
-        }
-        if (CVarColorPicker("Scarecrow Spawn", CVAR_DEVELOPER_TOOLS("ColViewer.ColorScarecrow"), { 255, 128, 0, 200 },
-                            false, ColorPickerResetButton | ColorPickerRandomButton, THEME_COLOR)) {
-            scarecrow_col =
-                VecFromRGBA8(CVarGetColor(CVAR_DEVELOPER_TOOLS("ColViewer.ColorScarecrow"), { 255, 128, 0, 200 }));
-        }
-
-        ImGui::TreePop();
-    } else {
-        UIWidgets::Tooltip(colorHelpText.c_str());
-    }
-    PopStyleHeader();
-    ImGui::EndDisabled();
+static NativeOptions::PagePtr CollisionViewerPage() {
+    namespace N = NativeOptions;
+    return N::MakePage("advanced/collision", N::Text("collision_viewer"), [] {
+        std::vector<N::Row> rows{N::CVarToggle(N::Text("enabled"), CVAR_DEVELOPER_TOOLS("ColViewer.Enabled"))};
+        const std::map<int, std::string> modes(ColRenderSettingNames.begin(), ColRenderSettingNames.end());
+        for (const auto& [key, suffix] : {
+                std::pair{"collision_scene", "Scene"}, {"collision_background", "BGActors"}, {"collision_check", "ColCheck"},
+                {"collision_water", "Waterbox"}, {"collision_scarecrow", "ScarecrowSpawn"} })
+            rows.push_back(N::CVarChoice(N::Text(key), std::string(CVAR_DEVELOPER_TOOLS("ColViewer.")) + suffix, COLVIEW_DISABLED, modes));
+        rows.push_back(N::CVarToggle(N::Text("collision_decal"), CVAR_DEVELOPER_TOOLS("ColViewer.Decal"),
+                                    true, N::Text("collision_decal_description")));
+        rows.push_back(N::CVarToggle(N::Text("collision_shaded"), CVAR_DEVELOPER_TOOLS("ColViewer.Shaded"),
+                                    false, N::Text("collision_shaded_description")));
+        rows.push_back(N::Link("colors", N::Text("colors"), [] {
+            return N::MakePage("advanced/collision/colors", N::Text("colors"), [] {
+                std::vector<N::Row> rows{
+                    N::CVarColor(N::Text("collision_normal"), CVAR_DEVELOPER_TOOLS("ColViewer.ColorNormal"), {255, 255, 255, 255}, false),
+                    N::CVarColor(N::Text("collision_hookshot"), CVAR_DEVELOPER_TOOLS("ColViewer.ColorHookshot"), {128, 128, 255, 255}, false),
+                    N::CVarColor(N::Text("collision_entrance"), CVAR_DEVELOPER_TOOLS("ColViewer.ColorEntrance"), {0, 255, 0, 255}, false),
+                    N::CVarColor(N::Text("collision_special"), CVAR_DEVELOPER_TOOLS("ColViewer.ColorSpecialSurface"), {192, 255, 192, 255}, false),
+                    N::CVarColor(N::Text("collision_interactable"), CVAR_DEVELOPER_TOOLS("ColViewer.ColorInteractable"), {192, 0, 192, 255}, false),
+                    N::CVarColor(N::Text("collision_slope"), CVAR_DEVELOPER_TOOLS("ColViewer.ColorSlope"), {255, 255, 128, 255}, false),
+                    N::CVarColor(N::Text("collision_void"), CVAR_DEVELOPER_TOOLS("ColViewer.ColorVoid"), {255, 0, 0, 255}, false),
+                    N::CVarColor(N::Text("collision_oc"), CVAR_DEVELOPER_TOOLS("ColViewer.ColorOC"), {255, 255, 255, 255}, false),
+                    N::CVarColor(N::Text("collision_ac"), CVAR_DEVELOPER_TOOLS("ColViewer.ColorAC"), {0, 0, 255, 255}, false),
+                    N::CVarColor(N::Text("collision_at"), CVAR_DEVELOPER_TOOLS("ColViewer.ColorAT"), {255, 0, 0, 255}, false),
+                    N::CVarColor(N::Text("collision_water"), CVAR_DEVELOPER_TOOLS("ColViewer.ColorWaterbox"), {0, 0, 255, 255}, false),
+                    N::CVarColor(N::Text("collision_scarecrow"), CVAR_DEVELOPER_TOOLS("ColViewer.ColorScarecrow"), {255, 128, 0, 200}, false),
+                };
+                if (CVarGetInteger(CVAR_SETTING("DisableChanges"), 0)) N::Disable(rows, N::Text("race_lockout"));
+                return rows;
+            }, N::Text("collision_colors_description"));
+        }));
+        if (CVarGetInteger(CVAR_SETTING("DisableChanges"), 0)) N::Disable(rows, N::Text("race_lockout"));
+        return rows;
+    });
 }
 
 // Calculates the normal for a triangle at the 3 specified points
@@ -671,7 +603,7 @@ void DrawColCheckCollision() {
     color = CVarGetColor(CVAR_DEVELOPER_TOOLS("ColViewer.ColorAC.Value"), { 0, 0, 255, 255 });
     dl.push_back(gsDPSetPrimColor(0, 0, color.r, color.g, color.b, 255));
     DrawColCheckList(dl, col.colAC, col.colACCount);
-    color = CVarGetColor(CVAR_DEVELOPER_TOOLS("ColViewer.ColorAT.Value"), { 0, 0, 255, 255 });
+    color = CVarGetColor(CVAR_DEVELOPER_TOOLS("ColViewer.ColorAT.Value"), { 255, 0, 0, 255 });
     dl.push_back(gsDPSetPrimColor(0, 0, color.r, color.g, color.b, 255));
 
     DrawColCheckList(dl, col.colAT, col.colATCount);
@@ -802,7 +734,8 @@ extern "C" void DrawColViewer() {
     CLOSE_DISPS(gPlayState->state.gfxCtx);
 }
 
-void ColViewerWindow::InitElement() {
+void InitializeCollisionViewer() {
+    NativeOptions::RegisterPage("Collision Viewer", CollisionViewerPage);
     CreateCylinderData();
     CreateSphereData();
 

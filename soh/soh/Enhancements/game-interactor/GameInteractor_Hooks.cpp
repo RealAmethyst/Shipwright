@@ -304,6 +304,22 @@ void GameInteractor_ExecuteOnPresentFileSelect() {
     GameInteractor::Instance->ExecuteHooks<GameInteractor::OnPresentFileSelect>();
 }
 
+void GameInteractor_ExecuteOnFileSelectUpdate(void* fileChoose) {
+    GameInteractor::Instance->ExecuteHooks<GameInteractor::OnFileSelectUpdate>(fileChoose);
+}
+
+void GameInteractor_ExecuteOnFileSelectClose() {
+    GameInteractor::Instance->ExecuteHooks<GameInteractor::OnFileSelectClose>();
+}
+
+void GameInteractor_ExecuteOnBootLogo(uint8_t logo) {
+    GameInteractor::Instance->ExecuteHooks<GameInteractor::OnBootLogo>(logo);
+}
+
+void GameInteractor_ExecuteOnTitleScreen(bool masterQuest, const char* prompt) {
+    GameInteractor::Instance->ExecuteHooks<GameInteractor::OnTitleScreen>(masterQuest, prompt);
+}
+
 void GameInteractor_ExecuteOnUpdateFileSelectSelection(uint16_t optionIndex) {
     GameInteractor::Instance->ExecuteHooks<GameInteractor::OnUpdateFileSelectSelection>(optionIndex);
 }

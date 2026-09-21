@@ -25,5 +25,16 @@
     "quest_sel_vanilla": "Quest - Original",
     "quest_sel_mq": "Quest - Master Quest",
     "quest_sel_randomizer": "Quest - Randomizer",
-    "quest_sel_boss_rush": "Quest - Boss Rush"
+    "quest_sel_boss_rush": "Quest - Boss Rush",
+    "title_select_file": "Please select a file.",
+    "title_open_file": "Open this file?",
+    "title_copy_from": "Copy which file?",
+    "title_copy_to": "Copy to which file?",
+    "title_erase_file": "Erase which file?",
+    "title_confirm": "Are you sure?",
+    "title_quest": "Please select a quest.",
+    "title_boss_rush": "Please select your settings.",
+    "title_randomizer": "Please select your settings.",
+    "title_name": "Name",
+    "controls": "A, Decide. B, Cancel."
 }

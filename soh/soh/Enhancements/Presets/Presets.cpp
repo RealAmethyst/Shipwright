@@ -1,4 +1,7 @@
 #include "Presets.h"
+#include "soh/NativeOptions/NativeOptions.h"
+#include "soh/NativeOptions/OptionsOverlayGeometry.h"
+#include <array>
 #include <string>
 #include <fstream>
 #include <ship/config/Config.h>
@@ -35,27 +38,6 @@ struct BlockInfo {
 
 static std::map<std::string, PresetInfo> presets;
 static std::string presetFolder;
-
-void BlankButton() {
-    ImGui::PushStyleColor(ImGuiCol_Button, { 0, 0, 0, 0 });
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 0, 0, 0, 0 });
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, { 0, 0, 0, 0 });
-    ImGui::PushStyleColor(ImGuiCol_Border, { 0, 0, 0, 0 });
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 8.0f));
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 5.0f);
-}
-
-void PresetCheckboxStyle(const ImVec4& color) {
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(color.x, color.y, color.z, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(color.x, color.y, color.z, 0.8f));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(color.x, color.y, color.z, 0.6f));
-    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.0f, 0.0f, 0.0f, 0.3f));
-    ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(1.0f, 1.0f, 1.0f, 0.7f));
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f, 6.0f));
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 5.0f);
-}
 
 static BlockInfo blockInfo[PRESET_SECTION_MAX] = {
     { { CVAR_PREFIX_SETTING, CVAR_PREFIX_WINDOW, CVAR_PREFIX_GAMEPLAY_STATS },
@@ -131,71 +113,6 @@ void applyPreset(std::string presetName, std::vector<PresetSection> includeSecti
     OTRGlobals::Instance->ScaleImGui();
 }
 
-void DrawPresetSelector(std::vector<PresetSection> includeSections, std::string presetLoc, bool disabled) {
-    std::vector<std::string> includedPresets;
-    for (auto& [name, info] : presets) {
-        for (auto& section : includeSections) {
-            if (info.apply[section]) {
-                includedPresets.push_back(name);
-            }
-        }
-    }
-    ImGui::Text("Presets");
-    if (includedPresets.empty()) {
-        ImGui::PushStyleColor(ImGuiCol_Text, UIWidgets::ColorValues.at(UIWidgets::Colors::Orange));
-        ImGui::Text("No presets with rando options. Make some in Settings -> Presets");
-        ImGui::PopStyleColor();
-        return;
-    }
-    std::string selectorCvar = fmt::format(CVAR_GENERAL("{}SelectedPreset"), presetLoc);
-    std::string currentIndex = CVarGetString(selectorCvar.c_str(), includedPresets[0].c_str());
-    if (!presets.contains(currentIndex)) {
-        currentIndex = *includedPresets.begin();
-        CVarSetString(selectorCvar.c_str(), currentIndex.c_str());
-    }
-    UIWidgets::PushStyleCombobox(THEME_COLOR);
-    if (ImGui::BeginCombo("##PresetsComboBox", currentIndex.c_str())) {
-        for (auto iter = includedPresets.begin(); iter != includedPresets.end(); ++iter) {
-            if (ImGui::Selectable(iter->c_str(), *iter == currentIndex)) {
-                CVarSetString(selectorCvar.c_str(), iter->c_str());
-                currentIndex = *iter;
-                Ship::Context::GetInstance()->GetWindow()->GetGui()->SaveConsoleVariablesNextFrame();
-            }
-        }
-
-        ImGui::EndCombo();
-    }
-    UIWidgets::PopStyleCombobox();
-    // UIWidgets::Tooltip(comboboxTooltip.c_str());
-
-    UIWidgets::PushStyleButton(THEME_COLOR);
-    if (UIWidgets::Button(
-            ("Apply Preset##" + selectorCvar).c_str(),
-            UIWidgets::ButtonOptions({ { .disabled = disabled } }).Color(THEME_COLOR).Size(UIWidgets::Sizes::Inline))) {
-        applyPreset(currentIndex, includeSections);
-    }
-    UIWidgets::PopStyleButton();
-}
-
-void DrawSectionCheck(const std::string& name, bool empty, bool* pointer, std::string section) {
-    ImGui::AlignTextToFramePadding();
-    if (empty) {
-        ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.0f, 0.0f, 0.7f });
-        BlankButton();
-        ImGui::BeginDisabled();
-        ImGui::Button((ICON_FA_TIMES + std::string("##") + name + section).c_str());
-        ImGui::EndDisabled();
-        UIWidgets::PopStyleButton();
-        ImGui::PopStyleColor();
-    } else {
-        ImGui::PushFont(OTRGlobals::Instance->fontMono);
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (ImGui::GetStyle().FramePadding.y));
-        UIWidgets::Checkbox(("##" + name + section).c_str(), pointer,
-                            { .defaultValue = true, .padding = { 6.0f, 6.0f }, .color = THEME_COLOR });
-        ImGui::PopFont();
-    }
-}
-
 void ParsePreset(nlohmann::json& json, std::string name) {
     try {
         presets[json["presetName"]].presetValues = json;
@@ -259,208 +176,150 @@ void SavePreset(std::string& presetName) {
     LoadPresets();
 }
 
-static std::string newPresetName;
-static bool saveSection[PRESET_SECTION_MAX];
 
-void DrawNewPresetPopup() {
-    bool nameExists = presets.contains(newPresetName);
-    UIWidgets::InputString("Preset Name", &newPresetName,
-                           UIWidgets::InputOptions()
-                               .Color(THEME_COLOR)
-                               .Size({ 200, 40 })
-                               .ComponentAlignment(UIWidgets::ComponentAlignments::Right)
-                               .LabelPosition(UIWidgets::LabelPositions::Near)
-                               .ErrorText("Preset name already exists")
-                               .HasError(nameExists));
-    nameExists = presets.contains(newPresetName);
-    bool noneSelected = true;
+namespace {
+using namespace NativeOptions;
+
+bool ValidPresetName(const std::string& name) {
+    return !name.empty() && name != "." && name != ".." &&
+           name.find_first_of("<>:\"/\\|?*") == std::string::npos &&
+           name.back() != '.' && name.back() != ' ' &&
+           std::none_of(name.begin(), name.end(), [](unsigned char c) { return c < 32; });
+}
+
+void CapturePreset(std::string newPresetName, const std::array<bool, PRESET_SECTION_MAX>& saveSection) {
+    presets[newPresetName] = {};
+    Ship::Context::GetInstance()->GetConsoleVariables()->Save();
+    auto config = Ship::Context::GetInstance()->GetConfig()->GetNestedJson();
     for (int i = PRESET_SECTION_SETTINGS; i < PRESET_SECTION_MAX; i++) {
         if (saveSection[i]) {
-            noneSelected = false;
-            break;
-        }
-    }
-    const char* disabledTooltip =
-        (newPresetName.empty() ? "Preset name is empty"
-                               : (noneSelected ? "No sections selected" : "Preset name already exists"));
-    for (int i = PRESET_SECTION_SETTINGS; i < PRESET_SECTION_MAX; i++) {
-        UIWidgets::Checkbox(fmt::format("Save {}", blockInfo[i].names[0]).c_str(), &saveSection[i],
-                            UIWidgets::CheckboxOptions().Color(THEME_COLOR).Padding({ 6.0f, 6.0f }));
-    }
-    if (UIWidgets::Button(
-            "Save", UIWidgets::ButtonOptions({ { .disabled = (nameExists || noneSelected || newPresetName.empty()),
-                                                 .disabledTooltip = disabledTooltip } })
-                        .Padding({ 6.0f, 6.0f })
-                        .Color(THEME_COLOR))) {
-        presets[newPresetName] = {};
-        auto config = Ship::Context::GetInstance()->GetConfig()->GetNestedJson();
-        for (int i = PRESET_SECTION_SETTINGS; i < PRESET_SECTION_MAX; i++) {
-            if (saveSection[i]) {
-                for (size_t j = 0; j < blockInfo[i].sections.size(); j++) {
-                    presets[newPresetName].presetValues["blocks"][blockInfo[i].names[1]][blockInfo[i].sections[j]] =
-                        config["CVars"][blockInfo[i].sections[j]];
-                }
+            for (size_t j = 0; j < blockInfo[i].sections.size(); j++) {
+                presets[newPresetName].presetValues["blocks"][blockInfo[i].names[1]][blockInfo[i].sections[j]] =
+                    config["CVars"][blockInfo[i].sections[j]];
             }
         }
-        if (saveSection[PRESET_SECTION_TRACKERS]) {
-            for (auto id : itemTrackerWindowIDs) {
-                auto window = ImGui::FindWindowByName(id);
-                if (window != nullptr) {
-                    auto size = window->Size;
-                    auto pos = window->Pos;
-                    presets[newPresetName].presetValues["blocks"][blockInfo[PRESET_SECTION_TRACKERS].names[1]]
-                                                       ["windows"][id]["size"]["width"] = size.x;
-                    presets[newPresetName].presetValues["blocks"][blockInfo[PRESET_SECTION_TRACKERS].names[1]]
-                                                       ["windows"][id]["size"]["height"] = size.y;
-                    presets[newPresetName].presetValues["blocks"][blockInfo[PRESET_SECTION_TRACKERS].names[1]]
-                                                       ["windows"][id]["pos"]["x"] = pos.x;
-                    presets[newPresetName].presetValues["blocks"][blockInfo[PRESET_SECTION_TRACKERS].names[1]]
-                                                       ["windows"][id]["pos"]["y"] = pos.y;
-                }
-            }
+    }
+    if (saveSection[PRESET_SECTION_TRACKERS]) {
+        auto windows = itemTrackerWindowIDs;
+        windows.push_back("Entrance Tracker");
+        windows.push_back("Check Tracker");
+        for (const auto* name : windows) {
+            if (!ImGui::FindWindowByName(name) && !ImGui::FindWindowSettingsByID(ImHashStr(name))) continue;
+            const auto layout = ReadOverlayGeometry(name);
+            const auto origin = ImGui::GetMainViewport()->Pos;
+            auto& saved = presets[newPresetName].presetValues["blocks"][blockInfo[PRESET_SECTION_TRACKERS].names[1]]["windows"][name];
+            saved["size"] = {{"width", layout.size.x}, {"height", layout.size.y}};
+            saved["pos"] = {{"x", layout.position.x + origin.x}, {"y", layout.position.y + origin.y}};
+        }
+    }
+    presets[newPresetName].fileName = newPresetName;
+    std::fill_n(presets[newPresetName].apply, PRESET_SECTION_MAX, true);
+    SavePreset(newPresetName);
 
-            auto window = ImGui::FindWindowByName("Entrance Tracker");
-            if (window != nullptr) {
-                auto size = window->Size;
-                auto pos = window->Pos;
-                presets[newPresetName].presetValues["blocks"][blockInfo[PRESET_SECTION_TRACKERS].names[1]]["windows"]
-                                                   ["Entrance Tracker"]["size"]["width"] = size.x;
-                presets[newPresetName].presetValues["blocks"][blockInfo[PRESET_SECTION_TRACKERS].names[1]]["windows"]
-                                                   ["Entrance Tracker"]["size"]["height"] = size.y;
-                presets[newPresetName].presetValues["blocks"][blockInfo[PRESET_SECTION_TRACKERS].names[1]]["windows"]
-                                                   ["Entrance Tracker"]["pos"]["x"] = pos.x;
-                presets[newPresetName].presetValues["blocks"][blockInfo[PRESET_SECTION_TRACKERS].names[1]]["windows"]
-                                                   ["Entrance Tracker"]["pos"]["y"] = pos.y;
-            }
-
-            window = ImGui::FindWindowByName("Check Tracker");
-            if (window != nullptr) {
-                auto size = window->Size;
-                auto pos = window->Pos;
-                presets[newPresetName].presetValues["blocks"][blockInfo[PRESET_SECTION_TRACKERS].names[1]]["windows"]
-                                                   ["Check Tracker"]["size"]["width"] = size.x;
-                presets[newPresetName].presetValues["blocks"][blockInfo[PRESET_SECTION_TRACKERS].names[1]]["windows"]
-                                                   ["Check Tracker"]["size"]["height"] = size.y;
-                presets[newPresetName].presetValues["blocks"][blockInfo[PRESET_SECTION_TRACKERS].names[1]]["windows"]
-                                                   ["Check Tracker"]["pos"]["x"] = pos.x;
-                presets[newPresetName].presetValues["blocks"][blockInfo[PRESET_SECTION_TRACKERS].names[1]]["windows"]
-                                                   ["Check Tracker"]["pos"]["y"] = pos.y;
-            }
-        }
-        presets[newPresetName].fileName = newPresetName;
-        std::fill_n(presets[newPresetName].apply, PRESET_SECTION_MAX, true);
-        SavePreset(newPresetName);
-        newPresetName = "";
-        ImGui::CloseCurrentPopup();
-    }
-    if (UIWidgets::Button("Cancel", UIWidgets::ButtonOptions().Padding({ 6.0f, 6.0f }).Color(THEME_COLOR))) {
-        ImGui::CloseCurrentPopup();
-    }
-    ImGui::EndPopup();
 }
 
-void PresetsCustomWidget(WidgetInfo& info) {
-    ImGui::PushFont(OTRGlobals::Instance->fontMonoLarger);
-    if (UIWidgets::Button("New Preset", UIWidgets::ButtonOptions(
-                                            { { .disabled = (CVarGetInteger(CVAR_SETTING("DisableChanges"), 0) != 0),
-                                                .disabledTooltip = "Disabled because of race lockout" } })
-                                            .Size(UIWidgets::Sizes::Inline)
-                                            .Color(THEME_COLOR))) {
-        ImGui::OpenPopup("newPreset");
-    }
-    if (ImGui::BeginPopup("newPreset", ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize |
-                                           ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
-                                           ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar)) {
-        DrawNewPresetPopup();
-    }
-    ImGui::SameLine();
-    UIWidgets::CVarCheckbox("Hide built-in presets", CVAR_GENERAL("HideBuiltInPresets"),
-                            UIWidgets::CheckboxOptions().Color(THEME_COLOR));
-    bool hideBuiltIn = CVarGetInteger(CVAR_GENERAL("HideBuiltInPresets"), 0);
-    UIWidgets::PushStyleTabs(THEME_COLOR);
-    if (ImGui::BeginTable("PresetWidgetTable", PRESET_SECTION_MAX + 3)) {
-        ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 400);
-        for (int i = PRESET_SECTION_SETTINGS; i < PRESET_SECTION_MAX; i++) {
-            ImGui::TableSetupColumn(blockInfo[i].names[0].c_str());
+PagePtr NewPresetPage() {
+    struct State {
+        std::string name;
+        std::array<bool, PRESET_SECTION_MAX> sections;
+    };
+    auto state = std::make_shared<State>();
+    state->sections.fill(true);
+    return MakePage("presets/new", NativeOptions::Text("new_preset"), [state] {
+        std::vector<Row> rows = {
+            String("name", NativeOptions::Text("preset_name"), state->name, [state](std::string value) { state->name = value; }, "", 120),
+        };
+        for (int i = 0; i < PRESET_SECTION_MAX; ++i)
+            rows.push_back(Toggle(std::to_string(i), blockInfo[i].names[0], state->sections[i],
+                                  [state, i](bool value) { state->sections[i] = value; }));
+        auto save = Action("save", NativeOptions::Text("save"), [state] {
+            try {
+                CapturePreset(state->name, state->sections);
+                GetModel().Back();
+            } catch (const std::exception& error) {
+                Message(NativeOptions::Text("save_failed"), error.what());
+            }
+        });
+        const bool any = std::any_of(state->sections.begin(), state->sections.end(), [](bool value) { return value; });
+        if (!ValidPresetName(state->name) || presets.contains(state->name) || !any ||
+            CVarGetInteger(CVAR_SETTING("DisableChanges"), 0)) {
+            save.enabled = false;
+            save.disabledReason = CVarGetInteger(CVAR_SETTING("DisableChanges"), 0) ? NativeOptions::Text("race_lockout") :
+                                  !ValidPresetName(state->name) ? NativeOptions::Text("preset_invalid_name") :
+                                  presets.contains(state->name) ? NativeOptions::Text("preset_exists") : NativeOptions::Text("preset_no_sections");
         }
-        ImGui::TableSetupColumn("Apply", ImGuiTableColumnFlags_WidthFixed,
-                                ImGui::CalcTextSize("Apply").x + ImGui::GetStyle().FramePadding.x * 2);
-        ImGui::TableSetupColumn("Delete", ImGuiTableColumnFlags_WidthFixed,
-                                ImGui::CalcTextSize("Delete").x + ImGui::GetStyle().FramePadding.x * 2);
-        BlankButton();
-        ImGui::TableNextRow();
-        ImGui::TableNextColumn();
-        for (int i = PRESET_SECTION_SETTINGS; i < PRESET_SECTION_MAX; i++) {
-            ImGui::TableNextColumn();
-            ImGui::Button(fmt::format("{}##header{}", blockInfo[i].icon, blockInfo[i].names[1]).c_str());
-            UIWidgets::Tooltip(blockInfo[i].names[0].c_str());
-        }
-        UIWidgets::PopStyleButton();
+        rows.push_back(std::move(save));
+        return rows;
+    });
+}
 
-        if (presets.empty()) {
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
-            ImGui::AlignTextToFramePadding();
-            ImGui::Text("No presets found.");
-            ImGui::EndTable();
-            UIWidgets::PopStyleTabs();
-            ImGui::PopFont();
-            return;
+PagePtr PresetPage(const std::string& name) {
+    return MakePage("presets/" + name, name, [name] {
+        std::vector<Row> rows;
+        auto found = presets.find(name);
+        if (found == presets.end())
+            return rows;
+        auto& info = found->second;
+        for (int i = 0; i < PRESET_SECTION_MAX; ++i) {
+            if (info.presetValues["blocks"].contains(blockInfo[i].names[1]))
+                rows.push_back(Toggle(std::to_string(i), blockInfo[i].names[0], info.apply[i],
+                                      [name, i](bool value) { presets.at(name).apply[i] = value; }));
         }
-        for (auto& [name, info] : presets) {
-            if (hideBuiltIn && info.isBuiltIn) {
-                continue;
-            }
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
-            ImGui::AlignTextToFramePadding();
-            ImGui::Text("%s", name.c_str());
-            for (int i = PRESET_SECTION_SETTINGS; i < PRESET_SECTION_MAX; i++) {
-                ImGui::TableNextColumn();
-                DrawSectionCheck(name, !info.presetValues["blocks"].contains(blockInfo[i].names[1]), &info.apply[i],
-                                 blockInfo[i].names[1]);
-            }
-            ImGui::TableNextColumn();
-            UIWidgets::PushStyleButton(THEME_COLOR);
-            if (UIWidgets::Button(
-                    ("Apply##" + name).c_str(),
-                    UIWidgets::ButtonOptions({ { .disabled = (CVarGetInteger(CVAR_SETTING("DisableChanges"), 0) != 0),
-                                                 .disabledTooltip = "Disabled because of race lockout" } })
-                        .Padding({ 6.0f, 6.0f }))) {
-                applyPreset(name);
-            }
-            UIWidgets::PopStyleButton();
-            ImGui::TableNextColumn();
-            UIWidgets::PushStyleButton(THEME_COLOR);
-            if (!info.isBuiltIn) {
-                if (UIWidgets::Button(("Delete##" + name).c_str(),
-                                      UIWidgets::ButtonOptions().Padding({ 6.0f, 6.0f }))) {
-                    auto path = FormatPresetPath(info.fileName);
-                    if (fs::exists(path)) {
-                        fs::remove(path);
+        auto apply = Action("apply", NativeOptions::Text("apply"), [name] {
+            if (CVarGetInteger(CVAR_SETTING("DisableChanges"), 0)) return;
+            applyPreset(name);
+            SaveSettings();
+            GetModel().Announce(NativeOptions::Text("preset_applied"));
+        });
+        if (CVarGetInteger(CVAR_SETTING("DisableChanges"), 0)) {
+            apply.enabled = false;
+            apply.disabledReason = NativeOptions::Text("race_lockout");
+        }
+        rows.push_back(std::move(apply));
+        if (!info.isBuiltIn) {
+            rows.push_back(Action("delete", NativeOptions::Text("delete"), [name] {
+                Confirm(NativeOptions::Text("delete_preset"), name, NativeOptions::Text("delete"), [name] {
+                    try {
+                        const auto path = FormatPresetPath(presets.at(name).fileName);
+                        if (fs::exists(path)) fs::remove(path);
+                        presets.erase(name);
+                        GetModel().Back();
+                    } catch (const std::exception& error) {
+                        Message(NativeOptions::Text("delete_failed"), error.what());
                     }
-                    presets.erase(name);
-                    UIWidgets::PopStyleButton();
-                    break;
-                }
-            }
-            UIWidgets::PopStyleButton();
+                });
+            }));
         }
-
-        ImGui::EndTable();
-    }
-    ImGui::PopFont();
-    UIWidgets::PopStyleTabs();
+        return rows;
+    });
 }
+
+PagePtr PresetsPage() {
+    return MakePage("presets", NativeOptions::Text("presets"), [] {
+        std::vector<Row> rows = {
+            Link("new", NativeOptions::Text("new_preset"), NewPresetPage),
+            CVarToggle(NativeOptions::Text("hide_builtin"), CVAR_GENERAL("HideBuiltInPresets")),
+        };
+        if (CVarGetInteger(CVAR_SETTING("DisableChanges"), 0)) {
+            rows[0].enabled = false;
+            rows[0].disabledReason = NativeOptions::Text("race_lockout");
+        }
+        const bool hide = CVarGetInteger(CVAR_GENERAL("HideBuiltInPresets"), 0);
+        for (const auto& [name, info] : presets)
+            if (!(hide && info.isBuiltIn))
+                rows.push_back(Link(name, name, [name] { return PresetPage(name); }));
+        return rows;
+    });
+}
+} // namespace
 
 void RegisterPresetsWidgets() {
+    NativeOptions::RegisterPage("Presets", PresetsPage, NativeOptions::Text("presets"));
     SohGui::mSohMenu->AddSidebarEntry("Settings", "Presets", 1);
     WidgetPath path = { "Settings", "Presets", SECTION_COLUMN_1 };
     SohGui::mSohMenu->AddWidget(path, "PresetsWidget", WIDGET_CUSTOM)
-        .CustomFunction(PresetsCustomWidget)
-        .HideInSearch(true);
+        .NativePage(PresetsPage, NativeOptions::Text("presets"));
     presetFolder = Ship::Context::GetInstance()->GetPathRelativeToAppDirectory("presets");
-    std::fill_n(saveSection, PRESET_SECTION_MAX, true);
     LoadPresets();
 }
 

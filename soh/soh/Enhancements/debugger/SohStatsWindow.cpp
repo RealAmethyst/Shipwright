@@ -1,24 +1,26 @@
 #include "SohStatsWindow.h"
-#include "soh/OTRGlobals.h"
+#include "soh/NativeOptions/NativeOptions.h"
+#include <libultraship/libultraship.h>
 
-void SohStatsWindow::DrawElement() {
-    const float framerate = ImGui::GetIO().Framerate;
-    const float deltatime = ImGui::GetIO().DeltaTime;
-    ImGui::PushFont(OTRGlobals::Instance->fontMonoLarger);
-    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
-
+void InitializePerformanceStats() {
+    namespace N = NativeOptions;
+    N::RegisterPage("Stats##Soh", [] {
+        return N::MakePage("advanced/stats", N::Text("performance_stats"), [] {
+            auto platform = N::Action("platform", N::Text("platform"), [] { N::ReadCurrentDescription(); });
 #if defined(_WIN32)
-    ImGui::Text("Platform: Windows");
+            platform.value = "Windows";
 #elif defined(__IOS__)
-    ImGui::Text("Platform: iOS");
+            platform.value = "iOS";
 #elif defined(__APPLE__)
-    ImGui::Text("Platform: macOS");
+            platform.value = "macOS";
 #elif defined(__linux__)
-    ImGui::Text("Platform: Linux");
+            platform.value = "Linux";
 #else
-    ImGui::Text("Platform: Unknown");
+            platform.value = N::Text("unknown");
 #endif
-    ImGui::Text("Status: %0.3f ms/frame (%0.1f FPS)", deltatime * 1000.0f, framerate);
-    ImGui::PopStyleColor();
-    ImGui::PopFont();
+            auto status = N::Action("status", N::Text("splits_status"), [] { N::ReadCurrentDescription(); });
+            status.value = fmt::format("{:.3f} ms/frame ({:.1f} FPS)", ImGui::GetIO().DeltaTime * 1000.0f, ImGui::GetIO().Framerate);
+            return std::vector<N::Row>{platform, status};
+        });
+    }, N::Text("performance_stats"));
 }

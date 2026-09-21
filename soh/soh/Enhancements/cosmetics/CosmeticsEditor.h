@@ -1,9 +1,7 @@
 #pragma once
 #include <libultraship/libultraship.h>
 
-// Not to be confused with tabs, groups are 1:1 with the boxes shown in the UI, grouping them allows us to
-// reset/randomize every item in a group at once. If you are looking for tabs they are rendered manually in ImGui in
-// `DrawCosmeticsEditor`
+// Groups share reset and randomize actions in the native Cosmetics pages.
 typedef enum {
     COSMETICS_GROUP_LINK,
     COSMETICS_GROUP_MIRRORSHIELD,
@@ -38,22 +36,6 @@ Color_RGBA8 CosmeticsEditor_GetDefaultValue(const char* id);
 #ifdef __cplusplus
 }
 
-typedef struct {
-    const std::string Name;
-    const std::string ToolTip;
-    const std::string CvarName;
-    ImVec4 ModifiedColor;
-    ImVec4 DefaultColor;
-    bool canRainbow;
-    bool hasAlpha;
-    bool sameLine;
-} CosmeticsColorIndividual;
-
-static float TablesCellsWidth = 300.0f;
-static ImGuiTableColumnFlags FlagsTable = ImGuiTableFlags_BordersH | ImGuiTableFlags_BordersV;
-static ImGuiTableColumnFlags FlagsCell =
-    ImGuiTableColumnFlags_WidthStretch | ImGuiTableColumnFlags_IndentEnable | ImGuiTableColumnFlags_NoSort;
-
 void CosmeticsEditor_RandomizeAll();
 void CosmeticsEditor_AutoRandomizeAll();
 void CosmeticsEditor_RandomizeGroup(CosmeticGroup group);
@@ -61,13 +43,7 @@ void CosmeticsEditor_ResetAll();
 void CosmeticsEditor_ResetGroup(CosmeticGroup group);
 void ApplyOrResetCustomGfxPatches(bool manualChange = true);
 
-class CosmeticsEditorWindow final : public Ship::GuiWindow {
-  public:
-    using GuiWindow::GuiWindow;
-
-    void InitElement() override;
-    void DrawElement() override;
-    void ApplyDungeonKeyColors();
-    void UpdateElement() override{};
-};
+void InitializeCosmeticsEditor();
+void SetCosmeticMargins(bool enabled);
+void ResetCosmeticPositions();
 #endif //__cplusplus
