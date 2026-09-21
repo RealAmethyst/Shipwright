@@ -589,6 +589,7 @@ void EnHorseNormal_Update(Actor* thisx, PlayState* play) {
     this->actor.focus.pos.y += 70.0f;
     this->unk_204 = this->actor.projectedPos;
     this->unk_204.y += 120.0f;
+    SpatialAudio_RecordProjection(&play->viewProjectionMtxF, &this->actor.focus.pos, &this->unk_204);
     Collider_UpdateCylinder(&this->actor, &this->bodyCollider);
     CollisionCheck_SetOC(play, &play->colChkCtx, &this->bodyCollider.base);
     if (this->actor.speedXZ == 0.0f) {
@@ -627,6 +628,7 @@ void func_80A6CC88(PlayState* play, EnHorseNormal* this, Vec3f* arg2) {
     SkinMatrix_Vec3fMtxFMultXYZW(&play->viewProjectionMtxF, arg2, &this->unk_1E8, &wDest);
     this->unk_1F4 = this->unk_1E8;
     this->unk_1F4.y += 120.0f;
+    SpatialAudio_RecordProjection(&play->viewProjectionMtxF, arg2, &this->unk_1F4);
 
     if (this->animationIdx == 0 && curFrame > 28.0f && !(this->unk_1E4 & 8)) {
         this->unk_1E4 |= 8;

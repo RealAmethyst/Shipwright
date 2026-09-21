@@ -1,0 +1,1694 @@
+{
+  "head": "257c6c0dfdf9cf9330735b43bc7512e1026d6fae",
+  "sounds": {
+    "NA_SE_EV_DIAMOND_SWITCH": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 56,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_DIAMOND_SWITCH);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 83,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_DIAMOND_SWITCH);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 394,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_DIAMOND_SWITCH);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 535,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 1, NA_SE_EV_DIAMOND_SWITCH);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 724,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_DIAMOND_SWITCH);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 782,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Ocarina Spots\", NA_SE_EV_DIAMOND_SWITCH);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1080,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_DIAMOND_SWITCH);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1141,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"marker\", NA_SE_EV_DIAMOND_SWITCH);"
+      }
+    ],
+    "NA_SE_EV_FOOT_SWITCH": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 61,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 1, NA_SE_EV_FOOT_SWITCH);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 77,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_FOOT_SWITCH);"
+      }
+    ],
+    "NA_SE_IT_HAMMER_HIT": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 67,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_IT_HAMMER_HIT);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 640,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Bronze Boulder\", NA_SE_IT_HAMMER_HIT);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 919,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Totem Pole\", NA_SE_IT_HAMMER_HIT);"
+      }
+    ],
+    "NA_SE_EV_HORSE_RUN_LEVEL": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 160,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_HORSE_RUN_LEVEL);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 171,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_HORSE_RUN_LEVEL);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 176,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_HORSE_RUN_LEVEL);"
+      }
+    ],
+    "NA_SE_EV_SARIA_MELODY": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 162,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_SARIA_MELODY);"
+      }
+    ],
+    "NA_SE_EV_WARP_HOLE": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 169,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_WARP_HOLE);"
+      }
+    ],
+    "NA_SE_EN_STALTU_LAUGH": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 173,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EN_STALTU_LAUGH);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 983,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EN_STALTU_LAUGH);"
+      }
+    ],
+    "NA_SE_EV_SMALL_DOG_BARK": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 178,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_SMALL_DOG_BARK);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 181,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_SMALL_DOG_BARK);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 185,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_SMALL_DOG_BARK);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 402,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_SMALL_DOG_BARK);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 406,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_SMALL_DOG_BARK);"
+      }
+    ],
+    "NA_SE_EV_STONE_BOUND": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 183,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_STONE_BOUND);"
+      }
+    ],
+    "NA_SE_EN_MUSI_SINK": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 188,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EN_MUSI_SINK);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 572,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Bean patch\", NA_SE_EN_MUSI_SINK);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1104,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"crawlspace\", NA_SE_EN_MUSI_SINK);"
+      }
+    ],
+    "NA_SE_EV_CHICKEN_CRY_M": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 190,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_CHICKEN_CRY_M);"
+      }
+    ],
+    "NA_SE_EN_PO_APPEAR": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 192,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EN_PO_APPEAR);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 855,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EN_PO_APPEAR);"
+      }
+    ],
+    "NA_SE_EV_RIVER_STREAM_S": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 195,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_RIVER_STREAM_S);"
+      }
+    ],
+    "NA_SE_EV_WATER_WALL": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 198,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_WATER_WALL);"
+      }
+    ],
+    "NA_SE_PL_CRAWL_SAND": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 200,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_PL_CRAWL_SAND);"
+      }
+    ],
+    "NA_SE_EV_SAND_STORM": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 202,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_SAND_STORM);"
+      }
+    ],
+    "NA_SE_EV_BRIDGE_OPEN": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 204,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_BRIDGE_OPEN);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 604,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"market bridge\", NA_SE_EV_BRIDGE_OPEN);"
+      }
+    ],
+    "NA_SE_EN_DODO_K_ROLL": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 206,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EN_DODO_K_ROLL);"
+      }
+    ],
+    "NA_SE_EN_DODO_K_LAVA": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 208,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EN_DODO_K_LAVA);"
+      }
+    ],
+    "NA_SE_EN_DARUNIA_HIT_BREAST": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 210,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EN_DARUNIA_HIT_BREAST);"
+      }
+    ],
+    "NA_SE_EV_COW_CRY": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 212,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_COW_CRY);"
+      }
+    ],
+    "NA_SE_OC_DOOR_OPEN": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 220,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_OC_DOOR_OPEN);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 681,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_OC_DOOR_OPEN);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 690,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Ice Shutter Door\", NA_SE_OC_DOOR_OPEN);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1129,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_OC_DOOR_OPEN);"
+      }
+    ],
+    "NA_SE_IT_SWORD_IMPACT": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 226,
+        "source": "f32 guardsfx = NA_SE_IT_SWORD_IMPACT;"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 317,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Passive Guards\", NA_SE_IT_SWORD_IMPACT);"
+      }
+    ],
+    "NA_SE_EN_OCTAROCK_ROCK": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 276,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Rock\", NA_SE_EN_OCTAROCK_ROCK);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 841,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EN_OCTAROCK_ROCK);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 959,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EN_OCTAROCK_ROCK);"
+      }
+    ],
+    "NA_SE_VO_NA_HELLO_0": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 279,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Story NPCs\", NA_SE_VO_NA_HELLO_0);"
+      }
+    ],
+    "NA_SE_VO_ST_DAMAGE": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 308,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Cursed Skulltula Person\", NA_SE_VO_ST_DAMAGE);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 981,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_VO_ST_DAMAGE);"
+      }
+    ],
+    "NA_SE_VO_NA_HELLO_1": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 321,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Shopkeepers\", NA_SE_VO_NA_HELLO_1);"
+      }
+    ],
+    "NA_SE_VO_NB_LAUGH": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 336,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Kokiri Child\", NA_SE_VO_NB_LAUGH);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 626,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Gerudo Guard\", NA_SE_VO_NB_LAUGH);"
+      }
+    ],
+    "NA_SE_EV_DIG_UP": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 387,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Loading Zone\", NA_SE_EV_DIG_UP);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 961,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_DIG_UP);"
+      }
+    ],
+    "NA_SE_EV_HORSE_NEIGH": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 413,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Horses\", NA_SE_EV_HORSE_NEIGH);"
+      }
+    ],
+    "NA_SE_EV_COW_CRY_LV": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 416,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Cows\", NA_SE_EV_COW_CRY_LV);"
+      }
+    ],
+    "NA_SE_EV_CHICKEN_CRY_N": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 422,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_CHICKEN_CRY_N);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 425,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_CHICKEN_CRY_N);"
+      }
+    ],
+    "NA_SE_PL_PULL_UP_PLANT": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 430,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Bush\", NA_SE_PL_PULL_UP_PLANT);"
+      }
+    ],
+    "NA_SE_EV_TREE_CUT": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 435,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_TREE_CUT);"
+      }
+    ],
+    "NA_SE_EV_TREE_SWING": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 441,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_TREE_SWING);"
+      }
+    ],
+    "NA_SE_IT_BOW_FLICK": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 450,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_IT_BOW_FLICK);"
+      }
+    ],
+    "NA_SE_IT_HOOKSHOT_STICK_OBJ": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 459,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Hookshot Pillar\", NA_SE_IT_HOOKSHOT_STICK_OBJ);"
+      },
+      {
+        "file": "ActorAccessibility.cpp",
+        "line": 597,
+        "source": "ActorAccessibility_PlaySound(nullptr, 2, NA_SE_IT_HOOKSHOT_STICK_OBJ);"
+      }
+    ],
+    "NA_SE_EV_ROLL_STAND_2": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 471,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_ROLL_STAND_2);"
+      }
+    ],
+    "NA_SE_EV_ELEVATOR_MOVE": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 474,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 1, NA_SE_EV_ELEVATOR_MOVE);"
+      }
+    ],
+    "NA_SE_IT_KAKASHI_JUMP": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 483,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Scarecrow\", NA_SE_IT_KAKASHI_JUMP);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 492,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_IT_KAKASHI_JUMP);"
+      }
+    ],
+    "NA_SE_EV_TBOX_UNLOCK": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 515,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_TBOX_UNLOCK);"
+      }
+    ],
+    "NA_SE_IT_REFLECTION_WOOD": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 542,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Sign\", NA_SE_IT_REFLECTION_WOOD);"
+      }
+    ],
+    "NA_SE_EV_WOODBOX_BREAK": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 550,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Small Crate\", NA_SE_EV_WOODBOX_BREAK);"
+      }
+    ],
+    "NA_SE_EN_NUTS_DAMAGE": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 558,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EN_NUTS_DAMAGE);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 579,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Collectible\", NA_SE_EN_NUTS_DAMAGE);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 970,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"gold skulltula token\", NA_SE_EN_NUTS_DAMAGE);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1054,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"heart canister\", NA_SE_EN_NUTS_DAMAGE);"
+      }
+    ],
+    "NA_SE_EN_OWL_FLUTTER": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 564,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Owl\", NA_SE_EN_OWL_FLUTTER);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1025,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EN_OWL_FLUTTER);"
+      }
+    ],
+    "NA_SE_VO_RT_LAUGH_0": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 567,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Ruto\", NA_SE_VO_RT_LAUGH_0);"
+      }
+    ],
+    "NA_SE_IT_WOODSTICK_BROKEN": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 577,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Graveyard Digging Spot\", NA_SE_IT_WOODSTICK_BROKEN);"
+      }
+    ],
+    "NA_SE_EV_BUTTERFRY_TO_FAIRY": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 587,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_BUTTERFRY_TO_FAIRY);"
+      }
+    ],
+    "NA_SE_EN_DODO_M_EAT": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 594,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"frog spot\", NA_SE_EN_DODO_M_EAT);"
+      }
+    ],
+    "NA_SE_EN_PO_BIG_GET": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 599,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"big poe spawn\", NA_SE_EN_PO_BIG_GET);"
+      }
+    ],
+    "NA_SE_EN_PO_CRY": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 609,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"haunted wasteland poe\", NA_SE_EN_PO_CRY);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 865,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EN_PO_CRY);"
+      }
+    ],
+    "NA_SE_EV_FLUTTER_FLAG": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 614,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_FLUTTER_FLAG);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 657,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_FLUTTER_FLAG);"
+      }
+    ],
+    "NA_SE_EV_SCOOPUP_WATER": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 620,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"oasis\", NA_SE_EV_SCOOPUP_WATER);"
+      }
+    ],
+    "NA_SE_EV_ROCK_BROKEN": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 630,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Boulder\", NA_SE_EV_ROCK_BROKEN);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1160,
+        "source": "temp->policy.sound = NA_SE_EV_ROCK_BROKEN;"
+      }
+    ],
+    "NA_SE_EV_TIMETRIP_LIGHT": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 642,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Time Block\", NA_SE_EV_TIMETRIP_LIGHT);"
+      }
+    ],
+    "NA_SE_EV_DROP_FALL": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 647,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_DROP_FALL);"
+      }
+    ],
+    "NA_SE_EV_METALGATE_OPEN": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 660,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_METALGATE_OPEN);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 747,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Forest Basement Gate\", NA_SE_EV_METALGATE_OPEN);"
+      }
+    ],
+    "NA_SE_EV_TRAP_BOUND": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 663,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_TRAP_BOUND);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 788,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Pushable Block\", NA_SE_EV_TRAP_BOUND);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 860,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_TRAP_BOUND);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1314,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_TRAP_BOUND);"
+      }
+    ],
+    "NA_SE_EV_WEB_BROKEN": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 669,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Web\", NA_SE_EV_WEB_BROKEN);"
+      }
+    ],
+    "NA_SE_EV_CHAIN_KEY_UNLOCK_B": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 679,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_CHAIN_KEY_UNLOCK_B);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1127,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_CHAIN_KEY_UNLOCK_B);"
+      }
+    ],
+    "NA_SE_EN_KDOOR_WAVE": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 688,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Killer Door\", NA_SE_EN_KDOOR_WAVE);"
+      }
+    ],
+    "NA_SE_EV_TRIFORCE_FLASH": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 730,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Sunlight Switch\", NA_SE_EV_TRIFORCE_FLASH);"
+      }
+    ],
+    "NA_SE_PL_ARROW_CHARGE_LIGHT": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 734,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Lightbeam\", NA_SE_PL_ARROW_CHARGE_LIGHT);"
+      }
+    ],
+    "NA_SE_PL_LAND_LADDER": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 741,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_PL_LAND_LADDER);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 898,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_PL_LAND_LADDER);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1120,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_PL_LAND_LADDER);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1347,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_PL_LAND_LADDER);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1360,
+        "source": "temp->policy.sound = NA_SE_PL_LAND_LADDER;"
+      }
+    ],
+    "NA_SE_EV_ELEVATOR_MOVE2": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 753,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Forest Elevator\", NA_SE_EV_ELEVATOR_MOVE2);"
+      }
+    ],
+    "NA_SE_IT_SWORD_REFLECT_MG": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 774,
+        "source": "actor, 0, freq <= 3 ? NA_SE_IT_SWORD_REFLECT_MG : NA_SE_IT_SHIELD_REFLECT_MG);"
+      }
+    ],
+    "NA_SE_IT_SHIELD_REFLECT_MG": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 774,
+        "source": "actor, 0, freq <= 3 ? NA_SE_IT_SWORD_REFLECT_MG : NA_SE_IT_SHIELD_REFLECT_MG);"
+      }
+    ],
+    "NA_SE_IT_BOMB_IGNIT": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 806,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_IT_BOMB_IGNIT);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 813,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_IT_BOMB_IGNIT);"
+      }
+    ],
+    "NA_SE_EN_ANUBIS_FIRE": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 815,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EN_ANUBIS_FIRE);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 823,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EN_ANUBIS_FIRE);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 831,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Po Torch\", NA_SE_EN_ANUBIS_FIRE);"
+      }
+    ],
+    "NA_SE_PL_DAMAGE": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 844,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_PL_DAMAGE);"
+      }
+    ],
+    "NA_SE_EV_POT_BROKEN": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 892,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Pot\", NA_SE_EV_POT_BROKEN);"
+      }
+    ],
+    "NA_SE_EV_BLOCK_SHAKE": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 894,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Platform collapsible\", NA_SE_EV_BLOCK_SHAKE);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1388,
+        "source": "temp->policy.sound = NA_SE_EV_BLOCK_SHAKE;"
+      }
+    ],
+    "NA_SE_EN_NUTS_FAINT": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 904,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EN_NUTS_FAINT);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 907,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EN_NUTS_FAINT);"
+      },
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 910,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EN_NUTS_FAINT);"
+      }
+    ],
+    "NA_SE_EV_FIRE_PILLAR": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 917,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Flame Circle\", NA_SE_EV_FIRE_PILLAR);"
+      }
+    ],
+    "NA_SE_IT_FLAME": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 926,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_IT_FLAME);"
+      }
+    ],
+    "NA_SE_EV_CHAIN_KEY_UNLOCK": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 933,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Barred\", NA_SE_EV_CHAIN_KEY_UNLOCK);"
+      }
+    ],
+    "NA_SE_PL_SLIP_ICE_LELEL": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 936,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Ice Block\", NA_SE_PL_SLIP_ICE_LELEL);"
+      }
+    ],
+    "NA_SE_EV_ICE_FREEZE": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 941,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Iceberg\", NA_SE_EV_ICE_FREEZE);"
+      }
+    ],
+    "NA_SE_EN_GOMA_BJR_EGG1": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 990,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EN_GOMA_BJR_EGG1);"
+      }
+    ],
+    "NA_SE_EV_JABJAB_HICCUP": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 996,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"jabu jabu\", NA_SE_EV_JABJAB_HICCUP);"
+      }
+    ],
+    "NA_SE_EN_BIRI_FLY": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 999,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"small jellyfish\", NA_SE_EN_BIRI_FLY);"
+      }
+    ],
+    "NA_SE_IT_FISHING_REEL_SLOW": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1006,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_IT_FISHING_REEL_SLOW);"
+      }
+    ],
+    "NA_SE_IT_FISHING_REEL_HIGH": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1008,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_IT_FISHING_REEL_HIGH);"
+      }
+    ],
+    "NA_SE_EN_DAIOCTA_SPLASH": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1015,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"bubble\", NA_SE_EN_DAIOCTA_SPLASH);"
+      }
+    ],
+    "NA_SE_EN_BALINADE_THUNDER": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1019,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"tentacle obstacle\", NA_SE_EN_BALINADE_THUNDER);"
+      }
+    ],
+    "NA_SE_EN_REDEAD_CRY": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1032,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"redead\", NA_SE_EN_REDEAD_CRY);"
+      }
+    ],
+    "NA_SE_EN_FREEZAD_DEAD": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1037,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EN_FREEZAD_DEAD);"
+      }
+    ],
+    "NA_SE_EN_GERUDOFT_BREATH": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1046,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EN_GERUDOFT_BREATH);"
+      }
+    ],
+    "NA_SE_EN_BIMOS_AIM": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1052,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Beamos\", NA_SE_EN_BIMOS_AIM);"
+      }
+    ],
+    "NA_SE_EV_BOMB_DROP_WATER": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1067,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_BOMB_DROP_WATER);"
+      }
+    ],
+    "NA_SE_EV_BOMB_BOUND": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1087,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"bombflowers\", NA_SE_EV_BOMB_BOUND);"
+      }
+    ],
+    "NA_SE_EN_AMOS_WAVE": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1089,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Armos Statue\", NA_SE_EN_AMOS_WAVE);"
+      }
+    ],
+    "NA_SE_EV_FIVE_COUNT_LUPY": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1096,
+        "source": "ActorAccessibility_PlaySoundForActor(actor, 0, NA_SE_EV_FIVE_COUNT_LUPY);"
+      }
+    ],
+    "NA_SE_OC_ABYSS": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1108,
+        "source": "ActorAccessibility_InitPolicy(&policy, \"Void\", NA_SE_OC_ABYSS);"
+      }
+    ],
+    "NA_SE_EN_DAIOCTA_DEAD": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1195,
+        "source": "temp->policy.sound = NA_SE_EN_DAIOCTA_DEAD;"
+      }
+    ],
+    "NA_SE_VO_RT_FALL": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1198,
+        "source": "temp->policy.sound = NA_SE_VO_RT_FALL;"
+      }
+    ],
+    "NA_SE_PL_SWORD_CHARGE": [
+      {
+        "file": "AccessibleActorList.cpp",
+        "line": 1230,
+        "source": "temp->policy.sound = NA_SE_PL_SWORD_CHARGE;"
+      }
+    ],
+    "NA_SE_SY_HITPOINT_ALARM": [
+      {
+        "file": "ActorAccessibility.cpp",
+        "line": 189,
+        "source": "policy->aimAssist.sfx = NA_SE_SY_HITPOINT_ALARM;"
+      }
+    ],
+    "NA_SE_IT_WALL_HIT_SOFT": [
+      {
+        "file": "ActorAccessibility.cpp",
+        "line": 537,
+        "source": "ActorAccessibility_PlaySound(nullptr, 3, NA_SE_IT_WALL_HIT_SOFT);"
+      }
+    ],
+    "NA_SE_IT_SHIELD_POSTURE": [
+      {
+        "file": "ActorAccessibility.cpp",
+        "line": 540,
+        "source": "ActorAccessibility_PlaySound(nullptr, 3, NA_SE_IT_SHIELD_POSTURE);"
+      }
+    ],
+    "NA_SE_PL_WALK_WALL": [
+      {
+        "file": "ActorAccessibility.cpp",
+        "line": 543,
+        "source": "ActorAccessibility_PlaySound(nullptr, 3, NA_SE_PL_WALK_WALL);"
+      }
+    ],
+    "NA_SE_EV_SHIP_BELL": [
+      {
+        "file": "ActorAccessibility.cpp",
+        "line": 569,
+        "source": "ActorAccessibility_PlaySound(nullptr, 0, NA_SE_EV_SHIP_BELL);"
+      }
+    ],
+    "NA_SE_SY_WARNING_COUNT_N": [
+      {
+        "file": "ActorAccessibility.cpp",
+        "line": 578,
+        "source": "ActorAccessibility_PlaySound(nullptr, 1, NA_SE_SY_WARNING_COUNT_N);"
+      },
+      {
+        "file": "accessibility_cues.cpp",
+        "line": 170,
+        "source": "return NA_SE_SY_WARNING_COUNT_N;"
+      },
+      {
+        "file": "accessibility_cues.cpp",
+        "line": 303,
+        "source": "play(NA_SE_SY_WARNING_COUNT_N);"
+      },
+      {
+        "file": "accessibility_cues.cpp",
+        "line": 308,
+        "source": "play(NA_SE_SY_WARNING_COUNT_N);"
+      }
+    ],
+    "NA_SE_PL_MAGIC_SOUL_FLASH": [
+      {
+        "file": "accessibility_cues.cpp",
+        "line": 97,
+        "source": "play(NA_SE_PL_MAGIC_SOUL_FLASH);"
+      },
+      {
+        "file": "accessibility_cues.cpp",
+        "line": 104,
+        "source": "play(NA_SE_PL_MAGIC_SOUL_FLASH);"
+      },
+      {
+        "file": "accessibility_cues.cpp",
+        "line": 124,
+        "source": "play(NA_SE_PL_MAGIC_SOUL_FLASH);"
+      },
+      {
+        "file": "accessibility_cues.cpp",
+        "line": 131,
+        "source": "play(NA_SE_PL_MAGIC_SOUL_FLASH);"
+      }
+    ],
+    "NA_SE_EV_WIND_TRAP": [
+      {
+        "file": "accessibility_cues.cpp",
+        "line": 164,
+        "source": "return NA_SE_EV_WIND_TRAP;"
+      }
+    ],
+    "NA_SE_EV_WOOD_BOUND": [
+      {
+        "file": "accessibility_cues.cpp",
+        "line": 166,
+        "source": "return NA_SE_EV_WOOD_BOUND;"
+      },
+      {
+        "file": "accessibility_cues.cpp",
+        "line": 282,
+        "source": "play(NA_SE_EV_WOOD_BOUND);"
+      },
+      {
+        "file": "accessibility_cues.cpp",
+        "line": 287,
+        "source": "play(NA_SE_EV_WOOD_BOUND);"
+      }
+    ],
+    "NA_SE_PL_LAND_WATER0": [
+      {
+        "file": "accessibility_cues.cpp",
+        "line": 168,
+        "source": "return NA_SE_PL_LAND_WATER0;"
+      },
+      {
+        "file": "accessibility_cues.cpp",
+        "line": 262,
+        "source": "play(NA_SE_PL_LAND_WATER0);"
+      },
+      {
+        "file": "accessibility_cues.cpp",
+        "line": 267,
+        "source": "play(NA_SE_PL_LAND_WATER0);"
+      }
+    ],
+    "NA_SE_IT_SHIELD_REFLECT_SW": [
+      {
+        "file": "accessibility_cues.cpp",
+        "line": 200,
+        "source": "play(NA_SE_IT_SHIELD_REFLECT_SW);"
+      }
+    ],
+    "NA_SE_IT_SWORD_CHARGE": [
+      {
+        "file": "accessibility_cues.cpp",
+        "line": 219,
+        "source": "play(NA_SE_IT_SWORD_CHARGE);"
+      },
+      {
+        "file": "accessibility_cues.cpp",
+        "line": 227,
+        "source": "play(NA_SE_IT_SWORD_CHARGE);"
+      }
+    ],
+    "NA_SE_IT_SWORD_PICKOUT": [
+      {
+        "file": "accessibility_cues.cpp",
+        "line": 245,
+        "source": "play(NA_SE_IT_SWORD_PICKOUT);"
+      },
+      {
+        "file": "accessibility_cues.cpp",
+        "line": 250,
+        "source": "play(NA_SE_IT_SWORD_PICKOUT);"
+      }
+    ]
+  },
+  "policies": [
+    {
+      "name": "Rock",
+      "line": 276
+    },
+    {
+      "name": "Story NPCs",
+      "line": 279
+    },
+    {
+      "name": "Cursed Skulltula Person",
+      "line": 308
+    },
+    {
+      "name": "Catching Guards",
+      "line": 310
+    },
+    {
+      "name": "Passive Guards",
+      "line": 317
+    },
+    {
+      "name": "Shopkeepers",
+      "line": 321
+    },
+    {
+      "name": "Kokiri Child",
+      "line": 336
+    },
+    {
+      "name": "Loading Zone",
+      "line": 387
+    },
+    {
+      "name": "Dogs",
+      "line": 390
+    },
+    {
+      "name": "Horses",
+      "line": 413
+    },
+    {
+      "name": "Cows",
+      "line": 416
+    },
+    {
+      "name": "Cuccos",
+      "line": 419
+    },
+    {
+      "name": "Bush",
+      "line": 430
+    },
+    {
+      "name": "Trees",
+      "line": 432
+    },
+    {
+      "name": "Lake Hylia Sun",
+      "line": 446
+    },
+    {
+      "name": "Hookshot Pillar",
+      "line": 459
+    },
+    {
+      "name": "Water Temple Hookshot Platform",
+      "line": 464
+    },
+    {
+      "name": "Scarecrow",
+      "line": 483
+    },
+    {
+      "name": "Scarecrow Spawn",
+      "line": 488
+    },
+    {
+      "name": "Chest",
+      "line": 502
+    },
+    {
+      "name": "Sign",
+      "line": 542
+    },
+    {
+      "name": "Small Crate",
+      "line": 550
+    },
+    {
+      "name": "deku stick drops",
+      "line": 555
+    },
+    {
+      "name": "Owl",
+      "line": 564
+    },
+    {
+      "name": "Ruto",
+      "line": 567
+    },
+    {
+      "name": "Bean patch",
+      "line": 572
+    },
+    {
+      "name": "Graveyard Digging Spot",
+      "line": 577
+    },
+    {
+      "name": "Collectible",
+      "line": 579
+    },
+    {
+      "name": "Collectible",
+      "line": 583
+    },
+    {
+      "name": "frog spot",
+      "line": 594
+    },
+    {
+      "name": "big poe spawn",
+      "line": 599
+    },
+    {
+      "name": "market bridge",
+      "line": 604
+    },
+    {
+      "name": "haunted wasteland poe",
+      "line": 609
+    },
+    {
+      "name": "flag pole",
+      "line": 613
+    },
+    {
+      "name": "oasis",
+      "line": 620
+    },
+    {
+      "name": "Gerudo Guard",
+      "line": 626
+    },
+    {
+      "name": "Boulder",
+      "line": 630
+    },
+    {
+      "name": "Bronze Boulder",
+      "line": 640
+    },
+    {
+      "name": "Time Block",
+      "line": 642
+    },
+    {
+      "name": "Grotto Door",
+      "line": 645
+    },
+    {
+      "name": "Truth Spinner",
+      "line": 654
+    },
+    {
+      "name": "Web",
+      "line": 669
+    },
+    {
+      "name": "Shutter Door",
+      "line": 676
+    },
+    {
+      "name": "Killer Door",
+      "line": 688
+    },
+    {
+      "name": "Ice Shutter Door",
+      "line": 690
+    },
+    {
+      "name": "Switch",
+      "line": 692
+    },
+    {
+      "name": "Wonder",
+      "line": 698
+    },
+    {
+      "name": "Jabu Switch",
+      "line": 719
+    },
+    {
+      "name": "Sunlight Switch",
+      "line": 730
+    },
+    {
+      "name": "Lightbeam",
+      "line": 734
+    },
+    {
+      "name": "Jabu Object",
+      "line": 738
+    },
+    {
+      "name": "Forest Basement Gate",
+      "line": 747
+    },
+    {
+      "name": "Forest Elevator",
+      "line": 753
+    },
+    {
+      "name": "Phantom Ganon",
+      "line": 758
+    },
+    {
+      "name": "Phantom Ganon Ball",
+      "line": 768
+    },
+    {
+      "name": "Ocarina Spots",
+      "line": 782
+    },
+    {
+      "name": "Pushable Block",
+      "line": 788
+    },
+    {
+      "name": "Torch",
+      "line": 799
+    },
+    {
+      "name": "Po Torch",
+      "line": 831
+    },
+    {
+      "name": "Deku Tree Moving Platform",
+      "line": 837
+    },
+    {
+      "name": "Poe Object",
+      "line": 849
+    },
+    {
+      "name": "Poe Sister",
+      "line": 877
+    },
+    {
+      "name": "Lake Hylia Object",
+      "line": 886
+    },
+    {
+      "name": "Pot",
+      "line": 892
+    },
+    {
+      "name": "Platform collapsible",
+      "line": 894
+    },
+    {
+      "name": "Ladder in Slingshot Room",
+      "line": 896
+    },
+    {
+      "name": "231 dekus",
+      "line": 902
+    },
+    {
+      "name": "Flame Circle",
+      "line": 917
+    },
+    {
+      "name": "Totem Pole",
+      "line": 919
+    },
+    {
+      "name": "Blue Fire",
+      "line": 924
+    },
+    {
+      "name": "Barred",
+      "line": 933
+    },
+    {
+      "name": "Ice Block",
+      "line": 936
+    },
+    {
+      "name": "Iceberg",
+      "line": 941
+    },
+    {
+      "name": "Statue Eye",
+      "line": 948
+    },
+    {
+      "name": "uninteractable rocks in kokiri forest",
+      "line": 957
+    },
+    {
+      "name": "Keese",
+      "line": 965
+    },
+    {
+      "name": "gold skulltula token",
+      "line": 970
+    },
+    {
+      "name": "Gold and Wall skulltulas",
+      "line": 973
+    },
+    {
+      "name": "Big Skulltula",
+      "line": 978
+    },
+    {
+      "name": "goma larva egg",
+      "line": 988
+    },
+    {
+      "name": "jabu jabu",
+      "line": 996
+    },
+    {
+      "name": "small jellyfish",
+      "line": 999
+    },
+    {
+      "name": "stinger",
+      "line": 1001
+    },
+    {
+      "name": "bubble",
+      "line": 1015
+    },
+    {
+      "name": "tentacle obstacle",
+      "line": 1019
+    },
+    {
+      "name": "tentacle",
+      "line": 1022
+    },
+    {
+      "name": "redead",
+      "line": 1032
+    },
+    {
+      "name": "freezard",
+      "line": 1034
+    },
+    {
+      "name": "Iron Knuckle",
+      "line": 1043
+    },
+    {
+      "name": "Beamos",
+      "line": 1052
+    },
+    {
+      "name": "heart canister",
+      "line": 1054
+    },
+    {
+      "name": "Ocarina of Time",
+      "line": 1056
+    },
+    {
+      "name": "Gohma",
+      "line": 1077
+    },
+    {
+      "name": "bombflowers",
+      "line": 1087
+    },
+    {
+      "name": "Armos Statue",
+      "line": 1089
+    },
+    {
+      "name": "Big Rupee",
+      "line": 1092
+    },
+    {
+      "name": "crawlspace",
+      "line": 1104
+    },
+    {
+      "name": "Void",
+      "line": 1108
+    },
+    {
+      "name": "Ladder/climable",
+      "line": 1113
+    },
+    {
+      "name": "Door",
+      "line": 1124
+    },
+    {
+      "name": "Area Change",
+      "line": 1137
+    },
+    {
+      "name": "marker",
+      "line": 1141
+    },
+    {
+      "name": "Terrain cue helper",
+      "line": 1390
+    }
+  ],
+  "actor_kinds": [
+    "ACTOR_BG_BDAN_OBJECTS",
+    "ACTOR_BG_BDAN_SWITCH",
+    "ACTOR_BG_BOMBWALL",
+    "ACTOR_BG_BREAKWALL",
+    "ACTOR_BG_GND_ICEBLOCK",
+    "ACTOR_BG_HAKA_GATE",
+    "ACTOR_BG_HAKA_ZOU",
+    "ACTOR_BG_HIDAN_CURTAIN",
+    "ACTOR_BG_HIDAN_DALM",
+    "ACTOR_BG_HIDAN_HROCK",
+    "ACTOR_BG_HIDAN_KOWARERUKABE",
+    "ACTOR_BG_HIDAN_ROCK",
+    "ACTOR_BG_ICE_OBJECTS",
+    "ACTOR_BG_ICE_SHELTER",
+    "ACTOR_BG_ICE_SHUTTER",
+    "ACTOR_BG_JYA_BLOCK",
+    "ACTOR_BG_JYA_BOMBIWA",
+    "ACTOR_BG_MENKURI_EYE",
+    "ACTOR_BG_MIZU_BWALL",
+    "ACTOR_BG_MIZU_MOVEBG",
+    "ACTOR_BG_MIZU_SHUTTER",
+    "ACTOR_BG_MORI_ELEVATOR",
+    "ACTOR_BG_MORI_HASHIRA4",
+    "ACTOR_BG_PO_EVENT",
+    "ACTOR_BG_PO_SYOKUDAI",
+    "ACTOR_BG_SPOT00_BREAK",
+    "ACTOR_BG_SPOT00_HANEBASI",
+    "ACTOR_BG_SPOT06_OBJECTS",
+    "ACTOR_BG_SPOT08_BAKUDANKABE",
+    "ACTOR_BG_SPOT08_ICEBLOCK",
+    "ACTOR_BG_SPOT11_OASIS",
+    "ACTOR_BG_SPOT15_RRBOX",
+    "ACTOR_BG_SPOT17_BAKUDANKABE",
+    "ACTOR_BG_SPOT18_OBJ",
+    "ACTOR_BG_SPOT18_SHUTTER",
+    "ACTOR_BG_YDAN_HASI",
+    "ACTOR_BG_YDAN_MARUTA",
+    "ACTOR_BG_YDAN_SP",
+    "ACTOR_BOSS_GANONDROF",
+    "ACTOR_BOSS_GOMA",
+    "ACTOR_DOOR_ANA",
+    "ACTOR_DOOR_KILLER",
+    "ACTOR_DOOR_SHUTTER",
+    "ACTOR_EN_AM",
+    "ACTOR_EN_ANI",
+    "ACTOR_EN_ANUBICE",
+    "ACTOR_EN_A_OBJ",
+    "ACTOR_EN_BA",
+    "ACTOR_EN_BILI",
+    "ACTOR_EN_BOMBF",
+    "ACTOR_EN_BOM_BOWL_MAN",
+    "ACTOR_EN_BOX",
+    "ACTOR_EN_BUBBLE",
+    "ACTOR_EN_BX",
+    "ACTOR_EN_COW",
+    "ACTOR_EN_CS",
+    "ACTOR_EN_DAIKU_KAKARIKO",
+    "ACTOR_EN_DEKUBABA",
+    "ACTOR_EN_DIVING_GAME",
+    "ACTOR_EN_DOG",
+    "ACTOR_EN_DOOR",
+    "ACTOR_EN_DS",
+    "ACTOR_EN_DU",
+    "ACTOR_EN_EIYER",
+    "ACTOR_EN_ELF",
+    "ACTOR_EN_EX_RUPPY",
+    "ACTOR_EN_FHG_FIRE",
+    "ACTOR_EN_FIREFLY",
+    "ACTOR_EN_FR",
+    "ACTOR_EN_FU",
+    "ACTOR_EN_FZ",
+    "ACTOR_EN_GE1",
+    "ACTOR_EN_GO2",
+    "ACTOR_EN_GOMA",
+    "ACTOR_EN_GS",
+    "ACTOR_EN_GUEST",
+    "ACTOR_EN_G_SWITCH",
+    "ACTOR_EN_HATA",
+    "ACTOR_EN_HEISHI1",
+    "ACTOR_EN_HEISHI2",
+    "ACTOR_EN_HEISHI3",
+    "ACTOR_EN_HEISHI4",
+    "ACTOR_EN_HINTNUTS",
+    "ACTOR_EN_HOLL",
+    "ACTOR_EN_HORSE_NORMAL",
+    "ACTOR_EN_HS",
+    "ACTOR_EN_HS2",
+    "ACTOR_EN_HY",
+    "ACTOR_EN_ICE_HONO",
+    "ACTOR_EN_IK",
+    "ACTOR_EN_IN",
+    "ACTOR_EN_ISHI",
+    "ACTOR_EN_IT",
+    "ACTOR_EN_ITEM00",
+    "ACTOR_EN_JJ",
+    "ACTOR_EN_JS",
+    "ACTOR_EN_KAKASI",
+    "ACTOR_EN_KAKASI2",
+    "ACTOR_EN_KAKASI3",
+    "ACTOR_EN_KANBAN",
+    "ACTOR_EN_KAREBABA",
+    "ACTOR_EN_KO",
+    "ACTOR_EN_KUSA",
+    "ACTOR_EN_KZ",
+    "ACTOR_EN_MA1",
+    "ACTOR_EN_MD",
+    "ACTOR_EN_MK",
+    "ACTOR_EN_MM",
+    "ACTOR_EN_MM2",
+    "ACTOR_EN_MS",
+    "ACTOR_EN_MU",
+    "ACTOR_EN_NB",
+    "ACTOR_EN_NIW",
+    "ACTOR_EN_NIW_GIRL",
+    "ACTOR_EN_NIW_LADY",
+    "ACTOR_EN_OKARINA_TAG",
+    "ACTOR_EN_OSSAN",
+    "ACTOR_EN_OWL",
+    "ACTOR_EN_PO_DESERT",
+    "ACTOR_EN_PO_FIELD",
+    "ACTOR_EN_PO_SISTERS",
+    "ACTOR_EN_RD",
+    "ACTOR_EN_RU1",
+    "ACTOR_EN_SA",
+    "ACTOR_EN_SI",
+    "ACTOR_EN_SKJ",
+    "ACTOR_EN_SSH",
+    "ACTOR_EN_ST",
+    "ACTOR_EN_STH",
+    "ACTOR_EN_STREAM",
+    "ACTOR_EN_SW",
+    "ACTOR_EN_SYATEKI_MAN",
+    "ACTOR_EN_TA",
+    "ACTOR_EN_TG",
+    "ACTOR_EN_TK",
+    "ACTOR_EN_TORYO",
+    "ACTOR_EN_VM",
+    "ACTOR_EN_WONDER_ITEM",
+    "ACTOR_EN_WOOD02",
+    "ACTOR_EN_XC",
+    "ACTOR_EN_ZL4",
+    "ACTOR_EN_ZO",
+    "ACTOR_ITEM_B_HEART",
+    "ACTOR_ITEM_ETCETERA",
+    "ACTOR_ITEM_OCARINA",
+    "ACTOR_MIR_RAY",
+    "ACTOR_OBJ_BEAN",
+    "ACTOR_OBJ_BOMBIWA",
+    "ACTOR_OBJ_HAMISHI",
+    "ACTOR_OBJ_HANA",
+    "ACTOR_OBJ_HSBLOCK",
+    "ACTOR_OBJ_KIBAKO",
+    "ACTOR_OBJ_KIBAKO2",
+    "ACTOR_OBJ_LIFT",
+    "ACTOR_OBJ_LIGHTSWITCH",
+    "ACTOR_OBJ_OSHIHIKI",
+    "ACTOR_OBJ_SWITCH",
+    "ACTOR_OBJ_SYOKUDAI",
+    "ACTOR_OBJ_TIMEBLOCK",
+    "ACTOR_OBJ_TSUBO",
+    "ACTOR_SHOT_SUN",
+    "VA_AREA_CHANGE",
+    "VA_CLIMB",
+    "VA_CRAWLSPACE",
+    "VA_DOOR",
+    "VA_MARKER",
+    "VA_TERRAIN_CUE",
+    "VA_VOID"
+  ]
+}

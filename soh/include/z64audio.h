@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 #include <ship/utils/binarytools/endianness.h>
+#include "soh/Enhancements/audio/spatial/SpatialAudio.h"
 
 #define MK_CMD(b0,b1,b2,b3) ((((b0) & 0xFF) << 0x18) | (((b1) & 0xFF) << 0x10) | (((b2) & 0xFF) << 0x8) | (((b3) & 0xFF) << 0))
 
@@ -557,7 +558,8 @@ typedef struct {
              } sound;
     /* 0x14 */ s16* filter;
     /* 0x18 */ char pad_18[0x8];
-} NoteSubEu; // size = 0x20
+    SpatialAudioSource spatialSource;
+} NoteSubEu; // Original N64 size = 0x20, followed by port-owned spatial metadata.
 
 typedef struct Note {
     /* 0x00 */ AudioListItem listItem;

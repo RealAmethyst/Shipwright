@@ -22,6 +22,26 @@ This work extends Shipwright 9.2.3's existing speech. Amethyst confirmed that sp
 - Pause: `OnKaleidoscopeUpdate` follows the native update. State 0 closes the pause screen; state 6 with `unk_1E4 == 0` identifies a settled page. Its page caption precedes its current item. The first-item queue persists until the item is readable. Returning from save resumes the current page. L and R icons are drawn by `KaleidoScope_DrawInfoPanel` and queue after the first item on opening.
 - Dialogue: `Message_Decode` in `z_message_PAL.c` establishes `choiceNum`. Its renderer establishes `choiceIndex`, including Better Owl's alternate default, before `MSGMODE_TEXT_DONE`. Speech separates the question from choices, queues the first selected answer after the question, and interrupts on movement. Incomplete choice lists remain silent. Byte `0x80` is the accented character À, not ASCII.
 
+## Camera compass and speech settings
+
+The existing speech switch now lives under Accessibility, Text to Speech, preserving
+`gSettings.A11yTTS`. The submenu also has Spoken compass (default On), Compass directions
+(four by default, optional eight), and Reset speech settings. Reset clears the three keys
+through normal CVar change/save handling. Turning speech off also silences the compass.
+
+`CompassSpeech.cpp` reads the actual view's look-at minus eye vector once per gameplay frame.
+It follows the verified map axes, including mirrored-map reflection, for the 20 outdoor maps
+and ten mapped dungeons in `WorldCompass.cpp`. Dungeon directions describe the local map;
+unmapped interiors and separate boss arenas stay silent. Direction words are centralized in
+the English, French and German misc banks and use `TTSSpeakLocalized` with queued Prism speech.
+
+The first valid heading establishes a silent baseline. A changed heading is announced after
+three steady samples. Menus, dialogue, cutscenes, invalid camera data and unsupported scenes
+clear the baseline. First-person aiming remains usable for compass speech. Production heading
+tests cover four/eight directions, reflection, wrapping, settling, jitter and invalid input;
+real camera timing and listening remain in the root checklist. No compass binding or PR
+orientation bell is introduced. See [wall-compass-research.md](wall-compass-research.md).
+
 ## Positions
 
 Positions are last in the item utterance and use the central `position` resource. Quantities precede item names.

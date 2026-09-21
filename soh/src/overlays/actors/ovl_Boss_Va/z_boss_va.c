@@ -3488,6 +3488,9 @@ void BossVa_UpdateEffects(PlayState* play) {
                 effect->pos.y = effect->offset.y + refActor->actor.world.pos.y;
                 effect->pos.z = effect->offset.z + refActor->actor.world.pos.z;
 
+                // This sound producer passes world coordinates directly.
+                SpatialAudio_RecordProjection(&play->viewProjectionMtxF, &effect->pos, &effect->pos);
+
                 switch (effect->mode) {
                     case TUMOR_UNUSED:
                         if (effect->timer == 0) {
@@ -3914,6 +3917,9 @@ void BossVa_SpawnTumor(PlayState* play, BossVaEffect* effect, BossVa* this, Vec3
             effect->scale = 0.0f;
 
             if (((i % 4) == 0) || (mode == 2)) {
+                Vec3f soundPos = { offset->x + this->actor.world.pos.x, offset->y + this->actor.world.pos.y,
+                                  offset->z + this->actor.world.pos.z };
+                SpatialAudio_RecordProjection(&play->viewProjectionMtxF, &soundPos, &effect->pos);
                 Audio_PlaySoundGeneral(NA_SE_EN_BALINADE_BREAK, &effect->pos, 4, &gSfxDefaultFreqAndVolScale,
                                        &gSfxDefaultFreqAndVolScale, &gSfxDefaultReverb);
             }

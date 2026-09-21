@@ -3706,6 +3706,8 @@ void EnHorse_PostDraw(Actor* thisx, PlayState* play, Skin* skin) {
 
     Skin_GetLimbPos(skin, 13, &sp94, &sp2C);
     SkinMatrix_Vec3fMtxFMultXYZW(&play->viewProjectionMtxF, &sp2C, &this->unk_228, &sp28);
+    // Voice playback uses a separate copy of the projected head position.
+    SpatialAudio_RecordProjection(&play->viewProjectionMtxF, &sp2C, &this->unk_21C);
     if ((this->animationIdx == ENHORSE_ANIM_IDLE && this->action != ENHORSE_ACT_FROZEN) &&
         ((frame > 40.0f && frame < 45.0f && this->type == HORSE_EPONA) ||
          (frame > 28.0f && frame < 33.0f && this->type == HORSE_HNI))) {

@@ -314,6 +314,7 @@ void Audio_ProcessSoundRequest(void) {
 
 void Audio_RemoveSoundBankEntry(u8 bankId, u8 entryIndex) {
     SoundBankEntry* entry = &gSoundBanks[bankId][entryIndex];
+    SpatialAudio_RemoveSfxSource(entry);
     u8 i;
 
     if (entry->sfxParams & 8) {
@@ -382,6 +383,7 @@ void Audio_ChooseActiveSounds(u8 bankId) {
             } else {
                 tempf1 = *entry->posY * 1;
                 entry->dist = (SQ(*entry->posX) + SQ(tempf1) + SQ(*entry->posZ)) * 1;
+                SpatialAudio_DistanceSquared(entry, entry->posX, entry->posY, entry->posZ, &entry->dist);
             }
             sfxImportance = entry->sfxImportance;
             if (entry->sfxParams & 0x10) {

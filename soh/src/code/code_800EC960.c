@@ -3602,6 +3602,7 @@ void func_800F4A70(void);
 void func_800F5CF8(void);
 
 void func_800F3054(void) {
+    SpatialAudio_PublishListener();
     if (func_800FAD34() == 0) {
         sAudioUpdateTaskStart = gAudioContext.totalTaskCnt;
         sAudioUpdateStartTime = osGetTime();
@@ -3882,6 +3883,9 @@ void Audio_SetSoundProperties(u8 bankId, u8 entryIdx, u8 channelIdx) {
     f32 behindScreenZ;
     u8 baseFilter = 0;
     SoundBankEntry* entry = &gSoundBanks[bankId][entryIdx];
+
+    SpatialAudio_SetSfxSource(channelIdx, entry, entry->posX, entry->posY, entry->posZ,
+                              entry->state == SFX_STATE_READY);
 
     switch (bankId) {
         case BANK_PLAYER:
@@ -4958,6 +4962,11 @@ void Audio_SetEnvReverb(s8 reverb) {
     sAudioEnvReverb = reverb & 0x7F;
 }
 
+float Audio_AccessibilityReverb(void) {
+    s32 reverb = sAudioEnvReverb + sAudioCodeReverb + sSpecReverb;
+    return CLAMP(reverb, 0, 127) / 128.0f;
+}
+
 void Audio_SetCodeReverb(s8 reverb) {
     if (reverb != 0) {
         sAudioCodeReverb = reverb & 0x7F;
@@ -4966,6 +4975,8 @@ void Audio_SetCodeReverb(s8 reverb) {
 
 void func_800F6700(s8 arg0) {
     s8 sp1F = 0;
+    arg0 = SpatialAudio_SetMode(arg0);
+    gSaveContext.audioSetting = arg0;
 
     switch (arg0) {
         case 0:
@@ -4981,16 +4992,14 @@ void func_800F6700(s8 arg0) {
             SetAudioChannels(audioStereo);
             break;
         case 2:
-            sp1F = 1;
-            D_80130604 = 1;
+            sp1F = SpatialAudio_HrtfAvailable() ? 0 : 1;
+            D_80130604 = sp1F;
             // SOH [Port] Inform LUS of audio setting change
             SetAudioChannels(audioStereo);
             break;
         case 3:
             sp1F = 0;
-            D_80130604 = 2;
-            // SOH [Port] Inform LUS of audio setting change
-            SetAudioChannels(audioMatrix51);
+            D_80130604 = 0;
             break;
     }
 

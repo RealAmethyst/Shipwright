@@ -3,6 +3,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "libultraship/libultra/abi.h"
+#include "soh/Enhancements/audio/spatial/SpatialAudio.h"
+void aMixAccessibilityCuesImpl(uint16_t left, uint16_t right, uint16_t wetLeft, uint16_t wetRight,
+                              int frames, float gameGain, float reverb);
 
 #undef aSegment
 #undef aClearBuffer
@@ -33,6 +36,7 @@
 #undef aUnkCmd19
 
 void aClearBufferImpl(uint16_t addr, int nbytes);
+void aSetSpatialSourceImpl(const SpatialAudioSource* source);
 void aLoadBufferImpl(const void* source_addr, uint16_t dest_addr, uint16_t nbytes);
 void aSaveBufferImpl(uint16_t source_addr, int16_t* dest_addr, uint16_t nbytes);
 void aLoadADPCMImpl(int num_entries_times_16, const int16_t* book_source_addr);

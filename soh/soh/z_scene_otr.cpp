@@ -1,5 +1,6 @@
 #include "soh/Enhancements/game-interactor/GameInteractor_Hooks.h"
 #include "ResourceManagerHelpers.h"
+#include "soh/Enhancements/audio/spatial/CueActors.h"
 #include <libultraship/libultraship.h>
 #include "soh/resource/type/Scene.h"
 #include <ship/utils/StringHelper.h>
@@ -298,6 +299,7 @@ bool Scene_CommandWindSettings(PlayState* play, SOH::ISceneCommand* cmd) {
 
 bool Scene_CommandExitList(PlayState* play, SOH::ISceneCommand* cmd) {
     play->setupExitList = (s16*)cmd->GetRawPointer();
+    SpatialAudio::SetSceneExits(play->setupExitList, cmd->GetPointerSize() / sizeof(s16));
 
     return false;
 }

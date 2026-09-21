@@ -4,6 +4,7 @@
 #include "soh/SohGui/SohMenu.h"
 #include "soh/SaveManager.h"
 #include "soh/Enhancements/game-interactor/GameInteractor_Hooks.h"
+#include "soh/Enhancements/audio/spatial/CueMixer.h"
 
 extern "C" {
 #include "global.h"
@@ -139,12 +140,53 @@ PagePtr BuildRoot(const std::string& requestedCategory) {
     for (const char* key : { "accessibility", "audio", "display", "controls", "gameplay", "cosmetics",
                              "randomizer", "trackers", "network", "system", "advanced" })
         categories[key] = Child(root, Text(key));
+#ifdef SOH_PRISM
+    Child(categories.at("accessibility"), Text("tts_menu"))->nativeRows = [] {
+        return std::vector<Row>{
+            CVarToggle(Text("tts_enabled"), CVAR_SETTING("A11yTTS"), true, Text("tts_enabled_help")),
+            CVarToggle(Text("tts_compass"), CVAR_SETTING("A11yTTSCompass"), true, Text("tts_compass_help")),
+            CVarChoice(Text("tts_compass_directions"), CVAR_SETTING("A11yTTSCompassDirections"), 4,
+                       {{4, Text("tts_compass_four")}, {8, Text("tts_compass_eight")}}, Text("tts_compass_directions_help")),
+            Action("tts/reset", Text("tts_reset"), [] {
+                for (const char* setting : {CVAR_SETTING("A11yTTS"), CVAR_SETTING("A11yTTSCompass"),
+                                            CVAR_SETTING("A11yTTSCompassDirections")}) {
+                    CVarClear(setting);
+                    ChangedCVar(setting);
+                }
+            }, Text("tts_reset_help"))};
+    };
+#endif
+    Child(categories.at("accessibility"), Text("audio"))->nativeRows = [] {
+        std::vector<Row> rows;
+        for (const char* cue : SpatialAudio::CueNames) {
+            const std::string key = std::string("cue_") + cue;
+            const std::string cvar = std::string(CVAR_SETTING("A11yAudio.")) + cue;
+            rows.push_back(CVarToggle(Text(key), cvar + ".Enabled", true, Text(key + "_help")));
+            rows.push_back(CVarInteger(Text(key + "_volume"), cvar + ".Volume", 10, 0, 100, 1, Text("cue_volume_help")));
+            auto reset = Text("cue_reset");
+            const auto placeholder = reset.find("$0");
+            if (placeholder == std::string::npos) continue;
+            reset.replace(placeholder, 2, Text(key));
+            rows.push_back(Action(cvar + ".Reset", reset, [cvar] {
+                for (const char* suffix : {".Enabled", ".Volume"}) {
+                    const auto setting = cvar + suffix;
+                    CVarClear(setting.c_str());
+                    ChangedCVar(setting);
+                }
+            }, Text("cue_reset_help")));
+        }
+        return rows;
+    };
     categories.at("audio")->nativeRows = [] {
         return std::vector<Row>{OriginalChoice("original/sound", gSaveContext.audioSetting,
             {{FS_AUDIO_STEREO, "audio_stereo"}, {FS_AUDIO_MONO, "audio_mono"},
              {FS_AUDIO_HEADSET, "audio_headset"}, {FS_AUDIO_SURROUND, "audio_surround"}}, [](int value) {
                 gSaveContext.audioSetting = static_cast<uint8_t>(value);
                 func_800F6700(gSaveContext.audioSetting);
+                if (gSaveContext.audioSetting != value) {
+                    Message(Text("unavailable"), Text(value == FS_AUDIO_SURROUND ? "spatial_output_unavailable" : "hrtf_unavailable"));
+                    return;
+                }
                 SaveManager::Instance->SaveGlobal();
             })};
     };

@@ -9,9 +9,91 @@
 - Local branch: `accessibility`, created directly at that tag.
 - Checkout: `H:\projects\ocarina\Shipwright`.
 
-GitHub verified RealAmethyst/Shipwright as a fork of HarbourMasters/Shipwright on 21 September 2026. Origin points to the fork and upstream to HarbourMasters. The accessibility work is recorded in local commits only; nothing has been pushed. Local changes restore native desktop setup dialogs and integrate Prism speech for extraction, boot logos and the existing game TTS, including menu positions and announcement ordering. Wider gameplay accessibility remains future work.
+GitHub verified RealAmethyst/Shipwright as a fork of HarbourMasters/Shipwright on 21 September 2026. Origin points to the fork and upstream to HarbourMasters. Accessibility development uses the `accessibility` branch. The changes restore native desktop setup dialogs and integrate Prism speech for extraction, boot logos and the existing game TTS, including menu positions and announcement ordering. Wider gameplay accessibility remains future work.
 
-## Current native Options build
+## Current spatial audio build
+
+Built and deployed on 22 September 2026. Build ID: `d4342490da07`. Launch path:
+`H:\projects\ocarina\game\soh.exe`. Headphone uses Steam Audio HRTF for verified world
+sources; Surround uses Windows spatial sound with a 7.1.4 bed. Stereo and Mono retain the
+native path. Music stays outside Steam Audio. A Windows headphone spatial provider can
+still externalize the stereo music bed in Surround; see [spatial-audio.md](spatial-audio.md).
+
+Thirteen recordings are bundled: item, person, door, transition, destructible, crawlspace,
+ladder, elevator, pathfinder, and north/east/south/west wall tones. Their approved PR 5435
+policies cover 73 actor kinds, collision-polygon exits/climbable surfaces, 65 distinct
+crawlspace/route locations and three Link-relative wall probes. Cues share native room reverb.
+Every recording has an On/Off switch, volume and reset under Accessibility, Audio, defaulting
+to On and 10 percent. Unassigned meanings remain pending; see [the inventory](spatial-cue-inventory.md).
+
+Accessibility, Text to Speech contains the existing speech switch, a spoken-compass switch,
+four/eight direction choice (default four), and reset. Directions follow the camera and the
+supported area's map, including reflection in mirrored play. Wall tones and compass are
+limited to 20 outdoor maps and ten mapped dungeons; other interiors/boss arenas stay silent.
+See [wall-compass-research.md](wall-compass-research.md) for source evidence and scanner corrections.
+Ordinary cue repetition now follows Time Stranger: complete clip plus 60 ms, a roughly
+0.4-second destructible excerpt, and 2 ms wall-loop overlap. Person repeats every 0.448 seconds.
+Obsolete ordinary frame timers were removed; special-item approach pulses retain their
+signals. See [cue-loop-timing.md](cue-loop-timing.md). The port archive, recordings and saved
+settings are unchanged. The prior file-select return, menu feedback and Prism changes remain included.
+
+Steam Audio is pinned to 4.8.1. CMake verifies the SDK ZIP hash in `CMake/SteamAudio.cmake`.
+The SOFA HRTF is pinned in `dependencies/steam-audio`; provenance and SHA-256 values for
+every recording are in `dependencies/accessibility-audio/manifest.json`. CMake/CPack installs
+runtime assets and notices. No other game's files are needed at runtime.
+
+SHA-256 values:
+
+- Package `_packages/Ship-9.2.3-cue-loops-prism-win64-ship.zip`: `e976ff8b51e541ea090a06fc0dfcb989eb2bb5d41fb7d01ca7a4c0de61482cf9`.
+- `soh.exe`: `d4342490da07723a26936a790f73c5ec3db2af60273a41535fdccdff9f34ba78`.
+- `soh.o2r`: `22207ca2cbfcc8881e4825a46c710493f82aa3c6bd5cbfe21bca5ecb72993dce`.
+- `phonon.dll`: `ca3dbc01dbc24492717011e80f6a51404ca143ae344ca660971d2c983f1e058d`.
+- `prism.dll`: `cb9712e11af9ebe96457dbf8f5daad4a6c359ae1f59cdf2663282b3a9cc9759c`.
+- `debug/soh.pdb`: `fd8a23f115e8aeccda9c9a3d019331625d3897d7193140a354dc5a5c788c4e87`.
+
+All 7,961 package entries and 1,280 port entries passed CRC checks.
+Packaged accessibility text matches source. The executable is Windows x64 GUI; packaged
+runtime DLLs and all thirteen recordings match their verified source hashes. No ROMs,
+extracted game archives, saves or personal configuration are packaged.
+
+Deployed files match the package. Replaced files and the prior checklist/log are backed up
+in `H:\projects\ocarina\backups\9.2.3-before-cue-loops-20260922`, preserving build
+`05bfdd1a3a0e`. Build `d1b8d8a98841` remains in `9.2.3-before-wall-compass-20260922`. The first spatial build `cb0b1718f56e` remains in the earlier
+`9.2.3-before-spatial-cues-20260922` backup, and the pre-spatial build remains in
+`9.2.3-before-spatial-audio-20260922`. Game archives, saves, configuration, Prism and overlay
+layout were hash-verified unchanged. No game was launched, controlled or closed. Amethyst
+launches the new build herself; no extraction or Windows restart is needed. Checks are in
+[todo.md](../../todo.md).
+
+The four audio/wall/compass suites passed for this update, including reference timing and
+waveform checks for all thirteen loops. The two Native Options suites and speech suite passed
+for the previous build; their code and text have not changed in this update. The production wall scanner uses controlled native-query
+fixtures for offline verification; this does not prove real-room coverage or runtime cost.
+All thirteen recordings passed playback/completion checks, with continued looping and
+cleanup tested for walls. The earlier production Windows backend probe rendered 72,000
+silent frames; this does not establish enabled Atmos or audible height speakers. The earlier
+HRTF benchmark rendered 64 continuous sources for one audio second in about 61 milliseconds.
+Windows x64 was built; Linux/macOS HRTF paths remain untested here.
+
+Logs and `cue-loops-deployment-manifest.json` are in
+`C:\Users\Amethyst\source\ocarina-build\spatial-audio-20260921`. Final build log:
+`build-cue-loops.log`; package log: `package-cue-loops.log`; test build log:
+`build-cue-loops-checks.log`. The unchanged port archive was generated previously in
+`generate-wall-compass-reset.log`. Earlier deployment records are retained. The spatial CMake test
+project is `tests/spatial-audio`; configure `STEAM_AUDIO_SDK` to the extracted pinned SDK
+and `SPATIAL_VCPKG` to the existing `x64-windows-static` triplet. Use the VS 2022 Release
+commands below; regenerate `GenerateSohOtr` when text changes. The existing verified SDK was
+reused with `FETCHCONTENT_SOURCE_DIR_STEAM_AUDIO`; fresh builds use the pinned download.
+
+Amethyst authorized committing and publishing all project changes on 22 September 2026.
+The `accessibility` branch in `RealAmethyst/libultraship` supplies the modified library;
+`.gitmodules` points to that fork. Publish the library first, followed by the parent branch.
+Prior local accessibility commits remain in both histories. The installation/release guide
+is outside this repository at `../../installation-and-release.md`, as requested, and is not
+part of either the source commit or the release ZIP. Publication does not create a GitHub
+release or upload the binary package automatically.
+
+## Previous native Options build
 
 Built and deployed on 21 September 2026. Build ID: `66a8f25eff60`. Launch path: `H:\projects\ocarina\game\soh.exe`.
 Returning from native Options to file selection now announces the live focused item and its position once, without

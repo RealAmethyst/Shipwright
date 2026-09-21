@@ -177,12 +177,6 @@ void SohMenu::AddMenuSettings() {
                      .ComboMap(languages)
                      .DefaultIndex(LANGUAGE_ENG));
     AddWidget(path, "Accessibility", WIDGET_SEPARATOR_TEXT);
-#ifdef SOH_PRISM
-    AddWidget(path, "Text to Speech", WIDGET_CVAR_CHECKBOX)
-        .CVar(CVAR_SETTING("A11yTTS"))
-        .RaceDisable(false)
-        .Options(CheckboxOptions().DefaultValue(true).Tooltip("Enables screen reader speech through Prism"));
-#endif
     AddWidget(path, "Disable Idle Camera Re-Centering", WIDGET_CVAR_CHECKBOX)
         .CVar(CVAR_SETTING("A11yDisableIdleCam"))
         .RaceDisable(false)

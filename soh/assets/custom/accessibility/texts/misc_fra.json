@@ -1,4 +1,12 @@
 {
+    "compass_north": "Nord",
+    "compass_northeast": "Nord-est",
+    "compass_east": "Est",
+    "compass_southeast": "Sud-est",
+    "compass_south": "Sud",
+    "compass_southwest": "Sud-ouest",
+    "compass_west": "Ouest",
+    "compass_northwest": "Nord-ouest",
     "minutes_plural": "$0 minutes",
     "minutes_singular": "$0 minute",
     "seconds_plural": "$0 secondes",

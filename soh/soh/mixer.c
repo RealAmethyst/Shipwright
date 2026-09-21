@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "mixer.h"
 #ifndef __clang__
@@ -78,6 +79,12 @@ static inline int16_t clamp16(int32_t v) {
         return 0x7fff;
     }
     return (int16_t)v;
+}
+
+void aMixAccessibilityCuesImpl(uint16_t left, uint16_t right, uint16_t wetLeft, uint16_t wetRight,
+                              int frames, float gameGain, float reverb) {
+    SpatialAudio_MixCues(BUF_S16(left), BUF_S16(right), reverb > 0 ? BUF_S16(wetLeft) : NULL,
+                        reverb > 0 ? BUF_S16(wetRight) : NULL, frames, gameGain, reverb);
 }
 
 static inline int32_t clamp32(int64_t v) {
@@ -292,6 +299,12 @@ void aEnvSetup2Impl(uint16_t initial_vol_left, uint16_t initial_vol_right) {
     rspa.vol[1] = initial_vol_right;
 }
 
+static SpatialAudioSource spatialSource;
+
+void aSetSpatialSourceImpl(const SpatialAudioSource* source) {
+    spatialSource = source ? *source : (SpatialAudioSource){0};
+}
+
 void aEnvMixerImpl(uint16_t in_addr, uint16_t n_samples, bool swap_reverb, bool neg_3, bool neg_2, bool neg_left,
                    bool neg_right, int32_t wet_dry_addr, u32 unk) {
     int16_t* in = BUF_S16(in_addr);
@@ -305,6 +318,21 @@ void aEnvMixerImpl(uint16_t in_addr, uint16_t n_samples, bool swap_reverb, bool 
     uint16_t rates[2] = { rspa.rate[0], rspa.rate[1] };
     uint16_t vol_wet = rspa.vol_wet;
     uint16_t rate_wet = rspa.rate_wet;
+    bool captured = false;
+    if (spatialSource.identity && SpatialAudio_PositionalActive() && n_samples <= 256) {
+        float mono[256];
+        uint16_t gainLeft = vols[0];
+        uint16_t gainRight = vols[1];
+        for (int frame = 0; frame < n_samples; frame += 8) {
+            const float left = gainLeft / 65536.0f;
+            const float right = gainRight / 65536.0f;
+            const float gain = sqrtf(left * left + right * right) / 32768.0f;
+            for (int j = 0; j < 8 && frame + j < n_samples; ++j) mono[frame + j] = in[frame + j] * gain;
+            gainLeft += rates[0];
+            gainRight += rates[1];
+        }
+        captured = SpatialAudio_Capture(&spatialSource, mono, n_samples);
+    }
 
     do {
         for (int i = 0; i < 8; i++) {
@@ -314,7 +342,7 @@ void aEnvMixerImpl(uint16_t in_addr, uint16_t n_samples, bool swap_reverb, bool 
                 samples[j] = (samples[j] * vols[j] >> 16) ^ negs[j];
             }
             for (int j = 0; j < 2; j++) {
-                *dry[j] = clamp16(*dry[j] + samples[j]);
+                if (!captured) *dry[j] = clamp16(*dry[j] + samples[j]);
                 dry[j]++;
                 *wet[j] = clamp16(*wet[j] + ((samples[swapped[j]] * vol_wet >> 16) ^ negs[2 + j]));
                 wet[j]++;

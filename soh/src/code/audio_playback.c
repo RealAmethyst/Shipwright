@@ -25,6 +25,8 @@ void Audio_InitNoteSub(Note* note, NoteSubEu* sub, NoteSubAttributes* attrs) {
     sub->bitField1 = note->noteSubEu.bitField1;
     sub->sound.samples = note->noteSubEu.sound.samples;
     sub->unk_06 = note->noteSubEu.unk_06;
+    sub->spatialSource = note->noteSubEu.spatialSource;
+    SpatialAudio_RefreshSource(&sub->spatialSource);
 
     Audio_NoteSetResamplingRate(sub, attrs->frequency);
 
@@ -104,6 +106,12 @@ void Audio_InitNoteSub(Note* note, NoteSubEu* sub, NoteSubAttributes* attrs) {
     sub->unk_07 = attrs->unk_14;
     sub->unk_0E = attrs->unk_16;
     sub->reverbVol = reverbVol;
+    if (sub->spatialSource.identity && SpatialAudio_PositionalActive()) {
+        sub->headsetPanLeft = sub->headsetPanRight = 0;
+        sub->bitField1.usesHeadsetPanEffects2 = false;
+        sub->bitField0.stereoStrongLeft = sub->bitField0.stereoStrongRight = false;
+        sub->bitField0.stereoHeadsetEffects = sub->bitField0.usesHeadsetPanEffects = false;
+    }
 }
 
 void Audio_NoteSetResamplingRate(NoteSubEu* noteSubEu, f32 resamplingRateInput) {
@@ -767,6 +775,14 @@ void Audio_NoteInitForLayer(Note* note, SequenceLayer* layer) {
     layer->channel->layerUnused = layer;
     layer->noteVelocity = 0.0f;
     Audio_NoteInit(note);
+    if (layer->channel->seqPlayer == &gAudioContext.seqPlayers[SEQ_PLAYER_SFX]) {
+        for (s32 channelIndex = 0; channelIndex < 16; ++channelIndex) {
+            if (gAudioContext.seqPlayers[SEQ_PLAYER_SFX].channels[channelIndex] == layer->channel) {
+                sub->spatialSource = SpatialAudio_GetChannelSource(channelIndex);
+                break;
+            }
+        }
+    }
     instId = layer->instOrWave;
 
     if (instId == 0xFF) {

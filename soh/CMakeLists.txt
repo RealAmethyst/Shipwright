@@ -294,6 +294,8 @@ if (BUILD_REMOTE_CONTROL)
 endif()
 
 include(${CMAKE_SOURCE_DIR}/CMake/PrismSpeech.cmake)
+include(${CMAKE_SOURCE_DIR}/CMake/SteamAudio.cmake)
+include(${CMAKE_SOURCE_DIR}/CMake/AccessibilityAudio.cmake)
 
 ################################################################################
 # Compile definitions

@@ -131,6 +131,8 @@ void func_800DB03C(s32 arg0) {
     }
 }
 
+static struct { s32 bus; f32 gain; f32 reverb; } sCueMix[8];
+
 Acmd* AudioSynth_Update(Acmd* cmdStart, s32* cmdCnt, s16* aiStart, s32 aiBufLen) {
     s32 chunkLen;
     s16* aiBufP;
@@ -142,6 +144,17 @@ Acmd* AudioSynth_Update(Acmd* cmdStart, s32* cmdCnt, s16* aiStart, s32 aiBufLen)
     cmdP = cmdStart;
     for (i = gAudioContext.audioBufferParameters.updatesPerFrame; i > 0; i--) {
         AudioSeq_ProcessSequences(i - 1);
+        {
+            s32 update = gAudioContext.audioBufferParameters.updatesPerFrame - i;
+            SequencePlayer* player = &gAudioContext.seqPlayers[SEQ_PLAYER_SFX];
+            SequenceChannel* channel = player->channels[0];
+            if (update < ARRAY_COUNT(sCueMix)) {
+                sCueMix[update].bus = IS_SEQUENCE_CHANNEL_VALID(channel) ? channel->reverbIndex & 3 : 4;
+                sCueMix[update].gain = player->enabled && !player->muted ?
+                    SQ(player->appliedFadeVolume * player->gameVolume) : 0.0f;
+                sCueMix[update].reverb = Audio_AccessibilityReverb();
+            }
+        }
         func_800DB03C(gAudioContext.audioBufferParameters.updatesPerFrame - i);
     }
 
@@ -591,6 +604,7 @@ Acmd* AudioSynth_DoOneAudioUpdate(s16* aiBuf, s32 aiBufLen, Acmd* cmd, s32 updat
         }
     }
 
+    SpatialAudio_BeginSlice(aiBufLen);
     aClearBuffer(cmd++, DMEM_LEFT_CH, DEFAULT_LEN_2CH);
     i = 0;
     for (reverbIndex = 0; reverbIndex < gAudioContext.numSynthesisReverbs; reverbIndex++) {
@@ -631,6 +645,11 @@ Acmd* AudioSynth_DoOneAudioUpdate(s16* aiBuf, s32 aiBufLen, Acmd* cmd, s32 updat
             i++;
         }
 
+        if (updateIndex < ARRAY_COUNT(sCueMix) && sCueMix[updateIndex].bus == reverbIndex) {
+            aMixAccessibilityCuesImpl(DMEM_LEFT_CH, DMEM_RIGHT_CH, DMEM_WET_LEFT_CH, DMEM_WET_RIGHT_CH,
+                                      aiBufLen, sCueMix[updateIndex].gain,
+                                      useReverb ? sCueMix[updateIndex].reverb : 0.0f);
+        }
         if (useReverb) {
             if (reverb->filterLeft != NULL || reverb->filterRight != NULL) {
                 cmd = AudioSynth_FilterReverb(cmd, aiBufLen * 2, reverb);
@@ -653,6 +672,10 @@ Acmd* AudioSynth_DoOneAudioUpdate(s16* aiBuf, s32 aiBufLen, Acmd* cmd, s32 updat
         i++;
     }
 
+    if (updateIndex < ARRAY_COUNT(sCueMix) && sCueMix[updateIndex].bus >= gAudioContext.numSynthesisReverbs) {
+        aMixAccessibilityCuesImpl(DMEM_LEFT_CH, DMEM_RIGHT_CH, DMEM_WET_LEFT_CH, DMEM_WET_RIGHT_CH,
+                                  aiBufLen, sCueMix[updateIndex].gain, 0.0f);
+    }
     updateIndex = aiBufLen * 2;
     if (CVarGetInteger(CVAR_ENHANCEMENT("MirroredWorld"), 0)) {
         aInterleave(cmd++, DMEM_TEMP, DMEM_RIGHT_CH, DMEM_LEFT_CH, updateIndex);
@@ -660,6 +683,7 @@ Acmd* AudioSynth_DoOneAudioUpdate(s16* aiBuf, s32 aiBufLen, Acmd* cmd, s32 updat
         aInterleave(cmd++, DMEM_TEMP, DMEM_LEFT_CH, DMEM_RIGHT_CH, updateIndex);
     }
     aSaveBuffer(cmd++, DMEM_TEMP, aiBuf, updateIndex * 2);
+    SpatialAudio_EndSlice(aiBuf, aiBufLen);
 
     return cmd;
 }
@@ -1065,7 +1089,9 @@ Acmd* AudioSynth_ProcessNote(s32 noteIndex, NoteSubEu* noteSubEu, NoteSynthesisS
     } else {
         side = 0;
     }
+    aSetSpatialSourceImpl(&noteSubEu->spatialSource);
     cmd = AudioSynth_ProcessEnvelope(cmd, noteSubEu, synthState, aiBufLen, DMEM_TEMP, side, flags);
+    aSetSpatialSourceImpl(NULL);
     if (noteSubEu->bitField1.usesHeadsetPanEffects2) {
         if (!(flags & A_INIT)) {
             flags = A_CONTINUE;

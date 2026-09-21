@@ -1092,13 +1092,20 @@ void OTRAudio_Thread() {
 
         // 3 is the maximum authentic frame divisor.
         s16 audio_buffer[SAMPLES_HIGH * NUM_AUDIO_CHANNELS * 3];
+        SpatialAudio_BeginBatch();
         for (int i = 0; i < AUDIO_FRAMES_PER_UPDATE; i++) {
             AudioMgr_CreateNextAudioBuffer(audio_buffer + i * (num_audio_samples * NUM_AUDIO_CHANNELS),
                                            num_audio_samples);
         }
 
-        AudioPlayer_Play((u8*)audio_buffer,
-                         num_audio_samples * (sizeof(int16_t) * NUM_AUDIO_CHANNELS * AUDIO_FRAMES_PER_UPDATE));
+        const int frames = num_audio_samples * AUDIO_FRAMES_PER_UPDATE;
+        if (SpatialAudio_GetMode() == 3) {
+            const auto* speakers = SpatialAudio_SpeakerBuffer(frames);
+            if (speakers) AudioPlayer_Play(reinterpret_cast<const uint8_t*>(speakers), frames * 12 * sizeof(int16_t));
+            else SPDLOG_ERROR("Spatial audio batch length mismatch: {} frames", frames);
+        } else {
+            AudioPlayer_Play(reinterpret_cast<const uint8_t*>(audio_buffer), frames * 2 * sizeof(int16_t));
+        }
 
         audio.processing = false;
         audio.cv_from_thread.notify_one();
@@ -1109,6 +1116,7 @@ void OTRAudio_Thread() {
 extern "C" void OTRAudio_Init() {
     // Precache all our samples, sequences, etc...
     ResourceMgr_LoadDirectory("audio");
+    SpatialAudio_Init();
 
     if (!audio.running) {
         audio.running = true;
@@ -1132,6 +1140,7 @@ extern "C" void OTRAudio_Exit() {
 
     // Wait until the audio thread quit
     audio.thread.join();
+    SpatialAudio_Shutdown();
 #if 0
     for (size_t i = 0; i < sequenceMapSize; i++) {
         free(sequenceMap[i]);

@@ -1,0 +1,93 @@
+[
+  {
+    "Name": "item",
+    "SourceSHA256": "6ea2781e29447f9dbb7db30eb14ce7fcd733af086f36c98cb46a013b3fb82307",
+    "Format": "Mono signed 16-bit PCM, 32000 Hz",
+    "Source": "H:\\projects\\digimon story time stranger\\research\\item_mono.wav",
+    "BundledSHA256": "be713fdf0f000d17ff2afd1c67ab84a451115d3a63666fe08f3350c99af039af"
+  },
+  {
+    "Name": "person",
+    "SourceSHA256": "6ac8742d7c65263f34f97c573cba2e8307bd658438779d015206e3ee27d21074",
+    "Format": "Mono signed 16-bit PCM, 32000 Hz",
+    "Source": "H:\\projects\\digimon story time stranger\\research\\person_mono.ogg",
+    "BundledSHA256": "1f3535a5cb74b0f35549f1935ba0035089a0a634190e23456837f3635f99b1ee"
+  },
+  {
+    "Name": "door",
+    "SourceSHA256": "d7037a3d713da5fed877fe0742e9b52420b3127f4a05f1aa2c6021bd58b48e57",
+    "Format": "Mono signed 16-bit PCM, 32000 Hz",
+    "Source": "H:\\projects\\digimon story time stranger\\mod\\sounds\\door.wav",
+    "BundledSHA256": "3503605b2dda91fb107d89bcb7726a58c00a223622d2937904f767cda298dcda"
+  },
+  {
+    "Name": "transition",
+    "SourceSHA256": "9c3487d3f62579c279eb47cd0721fd4adbc938963b36c97a2f95cfa79603eb48",
+    "Format": "Mono signed 16-bit PCM, 32000 Hz",
+    "Source": "H:\\projects\\digimon story time stranger\\mod\\sounds\\transition.wav",
+    "BundledSHA256": "d6d77f153106447088693d737ca2fa9280a18b656d21a0f6a3107a5bc820237d"
+  },
+  {
+    "Name": "destructible",
+    "SourceSHA256": "ef50d19b04aa2dbce7ed733a1ab7cff5e0900db60a737918c74b5e73d24dcf02",
+    "Format": "Mono signed 16-bit PCM, 32000 Hz",
+    "Source": "H:\\projects\\digimon story time stranger\\research\\distructive.wav",
+    "BundledSHA256": "8c6a5f6452aadce62d56181d95fa886863d49fca74aeb5f3c0c06c9a03a62b8f"
+  },
+  {
+    "Name": "crawlspace",
+    "SourceSHA256": "632bac053acf520403492ae7fd35041ceb62c4ba7e613a5aca5e9d410021c9c3",
+    "Format": "Mono signed 16-bit PCM, 32000 Hz",
+    "Source": "H:\\projects\\ocarina\\research\\crawlspace.wav",
+    "BundledSHA256": "026aa4f84c468a2fa018cd1c4bff9d6f1b4d3cbc06ca2e2fcb9dcd1be717b465"
+  },
+  {
+    "Name": "ladder",
+    "SourceSHA256": "c77b2479986e9aa848ba3abb1f6e0b2b4183e3e096016a195f564df52a4669e4",
+    "Format": "Mono signed 16-bit PCM, 32000 Hz",
+    "Source": "H:\\projects\\digimon story time stranger\\mod\\sounds\\ladder.wav",
+    "BundledSHA256": "558f5cb3eafe9e20042e0c6a4efe0b0201031651e5cf430fd18af3de191d0a64"
+  },
+  {
+    "Name": "elevator",
+    "SourceSHA256": "0b0eb1bf49059f6e553c9d295ee64446099ccbd5983c68ce4ca7270abcd0fa00",
+    "Format": "Mono signed 16-bit PCM, 32000 Hz",
+    "Source": "H:\\projects\\digimon story time stranger\\research\\elevator.wav",
+    "BundledSHA256": "581b349420e505f9991155c9361ffcbafcc5e8ed4610763cd23a7e004c3504f4"
+  },
+  {
+    "Name": "pathfinder",
+    "SourceSHA256": "35424fdc5b22ddc4e3f30ff213885bb7e2757b631ccdc62b899f7c902cc846f2",
+    "Format": "Mono signed 16-bit PCM, 32000 Hz",
+    "Source": "H:\\projects\\digimon story time stranger\\research\\pathfinding_tracker.wav",
+    "BundledSHA256": "70f93d286337bda4b464e46922feac66c41e488c871c215870f033c3d60512e9"
+  },
+  {
+    "Name": "wall_north",
+    "SourceSHA256": "dcd852e148aa5622bb59c092c269eb0e3f7c7dc1ba9ebe484eac742331bc412c",
+    "Format": "Mono signed 16-bit PCM, 32000 Hz",
+    "Source": "H:\\projects\\digimon story time stranger\\research\\wall_north.ogg",
+    "BundledSHA256": "96053ecc7480cef39e01e1fcd0bc58bf07acc3d9810f612d599d6dca095155ca"
+  },
+  {
+    "Name": "wall_east",
+    "SourceSHA256": "31777ab4499b0fcb86df0301e79b779353dd11c8111c9a54e8565675619c210b",
+    "Format": "Mono signed 16-bit PCM, 32000 Hz",
+    "Source": "H:\\projects\\digimon story time stranger\\research\\wall_east.ogg",
+    "BundledSHA256": "7d4a2b5565b2175d80275c8ed6f8d70abcd77f97a3ebd53c36b84f0a025271f4"
+  },
+  {
+    "Name": "wall_south",
+    "SourceSHA256": "51fa7303e9f27da498547a4bb3bf70d579501702e7751c5ee162118e1c14aa76",
+    "Format": "Mono signed 16-bit PCM, 32000 Hz",
+    "Source": "H:\\projects\\digimon story time stranger\\research\\wall_south.ogg",
+    "BundledSHA256": "e477276c6dc387255ed6c9ac18bb937d6494468a56baa8ec22706f04bb4a35f2"
+  },
+  {
+    "Name": "wall_west",
+    "SourceSHA256": "c3d6597aec2c590f3000b65f8648efe387df3d04485e249a0f34a01c1f84e35f",
+    "Format": "Mono signed 16-bit PCM, 32000 Hz",
+    "Source": "H:\\projects\\digimon story time stranger\\research\\wall_west.ogg",
+    "BundledSHA256": "ada71fa99fd86a665ac8a71b2f633bb7d345bacebb215aab3c98577724ea1595"
+  }
+]

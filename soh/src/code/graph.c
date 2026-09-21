@@ -297,6 +297,7 @@ void Graph_Update(GraphicsContext* gfxCtx, GameState* gameState) {
     CLOSE_DISPS(gfxCtx);
 
     GameState_ReqPadData(gameState);
+    SpatialAudio_BeginGameFrame();
     GameState_Update(gameState);
 
     OPEN_DISPS(gfxCtx);
