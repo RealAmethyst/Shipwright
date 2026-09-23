@@ -6,6 +6,7 @@
 #include "soh/Enhancements/game-interactor/GameInteractor_Hooks.h"
 #include "soh/ResourceManagerHelpers.h"
 #include "soh/NativeOptions/NativeOptions.h"
+#include "soh/Enhancements/navigation/Navigation.h"
 
 #include "message_data_static.h"
 extern MessageTableEntry* sNesMessageEntryTablePtr;
@@ -267,6 +268,7 @@ void GameState_Update(GameState* gameState) {
     GameState_SetFrameBuffer(gfxCtx);
 
     const s32 optionsOpen = NativeOptions_Update(gameState);
+    Navigation_UpdateInput(gameState);
     const s32 advanceFrame = optionsOpen && NativeOptions_AdvanceFrame(gameState);
     if (!optionsOpen || advanceFrame) {
         GameInteractor_ExecuteOnGameStateMainStart();
@@ -275,6 +277,7 @@ void GameState_Update(GameState* gameState) {
     if (optionsOpen) {
         NativeOptions_Draw(gfxCtx);
     }
+    Navigation_Draw(gfxCtx);
 
     func_800C4344(gameState);
 

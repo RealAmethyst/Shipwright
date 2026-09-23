@@ -171,8 +171,10 @@ The source trace exposed defects that are corrected rather than imported:
 `SurfaceType_GetSlope` supplies the slip-surface property in this release; its consumer is
 `Player_HandleSlopes`. The PR's floor-type checks use release accessor `func_80041D4C`, which
 the native player stores as `sFloorType`; values 2 and 3 feed `func_80838144`'s hazard handling.
-Climb flags use `func_80041DB8`; the native climbing consumer accepts bits 8 and 2. These are
-source-level APIs, not hardcoded runtime offsets.
+Climb flags use `func_80041DB8`. The native consumer `func_8083EC18` accepts bit 8
+(vines), bit 2 (ladder ascent), and bit 4 through `func_80041E4C` (ladder descent).
+The wall-sound exclusion now accepts all three. These are source-level APIs, not
+hardcoded runtime offsets.
 
 `CueActors.cpp` selects a wall recording from wall-minus-Link position with `MapDirection`.
 Each probe retains its own voice. The recording plays in full and repeats while detected,
@@ -210,3 +212,37 @@ boundary jitter. The real cue mixer tests all 13 recordings, continued looping w
 per-frame restarts, direction changes, gain and cleanup. These four audio/navigation suites,
 two existing native Options suites and the existing speech suite pass. The fixtures do not
 replace listening tests in real rooms or a performance measurement in the running game.
+
+## Follow-up: landing floors and ladder descent, 23 September
+
+Amethyst asked whether the pathfinder's rejected floor contacts also require changing
+wall sounds. Both features use `BgCheck_EntitySphVsWall3`, but with different movement.
+`BgCheck_CheckWallImpl` includes floor polygons in its downward line sweep when
+`checkHeight + dy < 5`. That result caused the pathfinder's former jump-landing failure.
+The ordinary wall probe follows the floor, stops at drops of 20 or more, and excludes
+smaller descending slopes before testing walls. At normal height 26, a descent large
+enough to trigger that sweep has already stopped the probe; the crawling height 15
+also has its relevant descents excluded. The ordinary probe's 5.5-unit steps are
+smaller than its minimum radius of 10, so the other long-horizontal-sweep floor branch
+is not used there either. Special climbing and swimming trials are separate paths;
+these findings do not establish every terrain case in those paths.
+
+The production wall scanner was linked into `scene_navigation_checks` with the real
+`z_bgcheck.c` and the private Kokiri collision resource. Before and after the flag fix,
+it correctly leaves the upper-platform edge at (-519, 200, -1030), facing negative X,
+and the porch ladder approach at (-31, 100, 1073), facing negative Z, silent. These
+checks also verify floor support and byte-for-byte preservation of Link's state.
+Sliding-terrain callbacks deliberately abort in this fixture rather than simulate
+untested player physics. No live actors or controller input are simulated.
+
+A separate controlled-query regression failed before the fix: a returned ladder
+descent surface with flags 5 was classified as an ordinary wall. The native climbing
+consumer accepts its bit 4 and starts the downward entry animation. The omission is
+now corrected in `Probe::ClimbableWall`; the floor query itself is unchanged. The
+checked porch approach was already silent, so this is not a reproduced false porch
+tone. The scanner suite now checks ascent (3), descent (5) and vines (8), alongside
+existing ordinary walls, ledges, slopes, hazards and dynamic collision ownership.
+
+The scanner suite and both native-scene wall checks pass. Logs are under
+`C:/Users/Amethyst/source/ocarina-build/wall-filter-20260923`. Listening and the earlier
+pathfinder controller tests remain pending in `../../todo.md`.

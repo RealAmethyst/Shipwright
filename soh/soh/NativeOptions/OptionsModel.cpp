@@ -78,6 +78,23 @@ void Model::Introduce(bool opening) {
         Announce(frame.page->description, !frame.queueFirstItem);
         frame.queueFirstItem = true;
     }
+    if (!frame.page->section.empty()) {
+        Announce(frame.page->section, !frame.queueFirstItem);
+        frame.queueFirstItem = true;
+    }
+}
+
+void Model::SetSection(std::string section) {
+    if (frames.empty()) return;
+    auto& frame = frames.back();
+    frame.page->section = PrepareOptionsText(section);
+    frame.selection = 0;
+    frame.selectedId.clear();
+    frame.firstItemPending = true;
+    frame.queueFirstItem = !frame.page->section.empty();
+    frame.hintsPending = false;
+    if (frame.queueFirstItem) Announce(frame.page->section);
+    Refresh();
 }
 
 void Model::Back(std::function<void()> apply) {

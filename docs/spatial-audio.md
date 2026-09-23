@@ -1,9 +1,10 @@
 # Spatial audio integration
 
-Built, packaged and deployed on 22 September 2026. Installed executable ID: `3070a31e1701`.
-This build fixes [debugger initialization during first-time extraction](setup-crash-20260922.md)
-without changing audio code or assets. Both the Documents copy and normal installation are
-updated; the previous binaries are in `../../backups/9.2.3-before-setup-fix-20260922`.
+The spatial audio foundation was built, packaged and deployed on 22 September 2026.
+The normal installation now uses pathfinder build `5504dc3ec85d`; current hashes and
+backups are in [the build notes](accessibility-build.md). The Documents extraction-test
+copy remains on `3070a31e1701`, including the fix for
+[debugger initialization during first-time extraction](setup-crash-20260922.md).
 Headphone HRTF, Windows spatial output, thirteen assigned recordings, three wall probes and
 the camera compass are implemented. See [wall-compass-research.md](wall-compass-research.md).
 Other cue meanings await assignments in `../../spatial-sound-assignments.md`. Listening tests

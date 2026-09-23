@@ -3,6 +3,7 @@
 #include "soh/Enhancements/audio/spatial/WorldCompass.h"
 #include "soh/Enhancements/game-interactor/GameInteractor.h"
 #include "soh/NativeOptions/NativeOptions.h"
+#include "soh/Enhancements/navigation/Navigation.h"
 #include <libultraship/libultraship.h>
 
 extern "C" {
@@ -16,7 +17,7 @@ void UpdateCompassSpeech(PlayState* play) {
     static uint32_t frame = UINT32_MAX;
     if (!play || !GameInteractor::IsSaveLoaded() || !SpatialAudio::HasMapCompass(play->sceneNum) ||
         !CVarGetInteger(CVAR_SETTING("A11yTTS"), 1) || !CVarGetInteger(CVAR_SETTING("A11yTTSCompass"), 1) ||
-        NativeOptions_IsOpen() || play->pauseCtx.state || !GET_PLAYER(play) || Play_InCsMode(play) ||
+        NativeOptions_IsOpen() || Navigation_IsOpen() || play->pauseCtx.state || !GET_PLAYER(play) || Play_InCsMode(play) ||
         !std::isfinite(play->view.eye.y) || !std::isfinite(play->view.lookAt.y) ||
         (GET_PLAYER(play)->stateFlags1 & (PLAYER_STATE1_IN_CUTSCENE | PLAYER_STATE1_TALKING |
              PLAYER_STATE1_GETTING_ITEM | PLAYER_STATE1_DEAD)) || Message_GetState(&play->msgCtx) != TEXT_STATE_NONE) {

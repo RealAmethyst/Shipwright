@@ -12,6 +12,7 @@
 #include "soh/OTRGlobals.h"
 #include "soh/ResourceManagerHelpers.h"
 #include "soh/SaveManager.h"
+#include "soh/Enhancements/navigation/Navigation.h"
 #include "soh/framebuffer_effects.h"
 
 #include <libultraship/libultraship.h>
@@ -1205,6 +1206,7 @@ void Play_Update(PlayState* play) {
 
                     PLAY_LOG(3618);
                     CollisionCheck_OC(play, &play->colChkCtx);
+                    Navigation_CaptureCollision(play);
 
                     PLAY_LOG(3624);
                     CollisionCheck_Damage(play, &play->colChkCtx);

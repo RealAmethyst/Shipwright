@@ -59,6 +59,7 @@ def main():
     parser.add_argument("--archive", type=Path, required=True)
     parser.add_argument("--checks", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--sample", help="Render only this sample")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     args.output.mkdir(parents=True, exist_ok=True)
@@ -144,6 +145,19 @@ def main():
         samples[f"title-{selection}"] = {
             "title": "", "rows": [], "titleMenu": True, "selection": selection, "start": "PRESS START",
         }
+    navigation = json.loads((root / "soh/assets/custom/accessibility/texts/navigation_eng.json").read_text())
+    samples["navigation"] = {
+        "title": navigation["title"], "section": navigation["category_exits"],
+        "footer": navigation["footer"],
+        "rows": [{"id": str(i), "label": name,
+                  "description": (navigation["distance_near"] if i == 0 else
+                                  navigation["distance_one"] if i == 1 else
+                                  navigation["distance"].replace("$0", str(i * 5))) + ", " + navigation["north"]}
+                 for i, name in enumerate(("Kokiri Forest", "Hyrule Field", "Kakariko Village", "Lake Hylia",
+                                           "Gerudo Valley", "Lon Lon Ranch", "Market"))],
+    }
+    if args.sample:
+        samples = {args.sample: samples[args.sample]}
     with zipfile.ZipFile(args.archive) as archive:
         # The final controller-pad glyph is optional in this port. Load only glyphs
         # present in the archive, and fail if the production layout requests one

@@ -5112,6 +5112,41 @@ static u8 sReturnEntranceGroupIndices[] = {
     0,  // ENTR_RETURN_GREAT_FAIRYS_FOUNTAIN_MAGIC
 };
 
+// Read-only destination preview. Shares the native return groups above without
+// discovering entrances, starting transitions or changing grotto/respawn state.
+s32 Player_PeekExitEntrance(PlayState* play, s32 entrance) {
+    s32 group;
+    s32 start;
+    s32 end;
+    s32 i;
+    if (entrance < 0 || entrance > ENTR_RETURN_GROTTO) {
+        return -1;
+    }
+    if (IS_RANDO && !((play->sceneNum == SCENE_CASTLE_COURTYARD_GUARDS_DAY ||
+                      play->sceneNum == SCENE_CASTLE_COURTYARD_GUARDS_NIGHT) &&
+                     entrance == ENTR_CASTLE_GROUNDS_RAINBOW_BRIDGE_EXIT)) {
+        entrance = Entrance_PeekNextIndexOverride(entrance);
+    }
+    if (entrance == ENTR_RETURN_GROTTO) {
+        entrance = gSaveContext.respawn[RESPAWN_MODE_RETURN].entranceIndex;
+    } else if (entrance >= ENTR_RETURN_YOUSEI_IZUMI_YOKO && entrance < ENTR_RETURN_GROTTO) {
+        group = entrance - ENTR_RETURN_YOUSEI_IZUMI_YOKO;
+        start = sReturnEntranceGroupIndices[group];
+        end = ARRAY_COUNT(sReturnEntranceGroupData);
+        for (i = 0; i < ARRAY_COUNT(sReturnEntranceGroupIndices); ++i) {
+            if (sReturnEntranceGroupIndices[i] > start && sReturnEntranceGroupIndices[i] < end) {
+                end = sReturnEntranceGroupIndices[i];
+            }
+        }
+        if (play->curSpawn < 0 || play->curSpawn >= end - start) {
+            return -1;
+        }
+        entrance = IS_RANDO ? Entrance_PeekDynamicExitOverride(start + play->curSpawn)
+                            : sReturnEntranceGroupData[start + play->curSpawn];
+    }
+    return entrance >= 0 && entrance < ENTR_MAX ? entrance : -1;
+}
+
 s32 Player_HandleExitsAndVoids(PlayState* play, Player* this, CollisionPoly* poly, u32 bgId) {
     s32 exitIndex;
     s32 temp;

@@ -78,6 +78,20 @@ void DisplayListChecks() {
           "The overlay must point to the owned command storage");
 
     const std::vector<Gfx> savedDense(dense.begin(), dense.end());
+    auto navigation = MakePage("navigation", "Navigation", [] {
+        std::vector<Row> rows;
+        for (int i = 0; i < 12; ++i) {
+            auto row = Action(std::to_string(i), "Nearby target", [] {});
+            row.description = "150 game units away, northeast";
+            rows.push_back(row);
+        }
+        return rows;
+    });
+    navigation->section = "Ladders and crawlspaces";
+    model.Open(navigation);
+    const auto navigationList = lists.Build(Layout(model, "Left/right: category. A: navigate. B: close.", width, encode), glyph, panel);
+    Check(!navigationList.empty() && Opcode(navigationList.back()) == G_ENDDL, "Navigation must emit a bounded display list");
+    Check(Equal(root, savedRoot) && Equal(dense, savedDense), "Navigation invalidated existing game display lists");
     lists.BeginFrame(1);
     for (int i = 0; i < 8; ++i) lists.Build({}, glyph, panel);
     Check(Equal(root, savedRoot) && Equal(dense, savedDense), "Resetting the other graphics pool must retain this frame");

@@ -11,10 +11,162 @@
 
 GitHub verified RealAmethyst/Shipwright as a fork of HarbourMasters/Shipwright on 21 September 2026. Origin points to the fork and upstream to HarbourMasters. Accessibility development uses the `accessibility` branch. The changes restore native desktop setup dialogs and integrate Prism speech for extraction, boot logos and the existing game TTS, including menu positions and announcement ordering. Wider gameplay accessibility remains future work.
 
-## Current spatial audio build
+## Current pathfinder speed build
 
-Built and deployed on 22 September 2026. Build ID: `d4342490da07`. Launch path:
-`H:\projects\ocarina\game\soh.exe`. Headphone uses Steam Audio HRTF for verified world
+Built and deployed on 23 September 2026 as `5504dc3ec85d`, at
+`H:/projects/ocarina/game/soh.exe`. Native collision topology, lazy candidate validation
+and a 6 ms search slice reduce search time. The route follows Link's current position,
+retains its target through temporary loss of support and rechecks the original climb
+approach. [Source findings and benchmarks](pathfinder.md) record the verified causes,
+five-route comparison and remaining movement limits. The Documents extraction-test
+copy remains on `3070a31e1701`.
+
+Amethyst subsequently tested this build, reported that the pathfinder is "now much
+better," and authorized committing and pushing the completed work. Individual
+route, listening and broader map checks remain in the root checklist.
+
+- Executable SHA-256: `5504dc3ec85dd8c9dc385cad5c19cf0dc37e320facb2328312cbc59181ca58f2`.
+- Symbols SHA-256: `7887d4207ca315475338890597d395edfafc1bd7c6f68efff943237cc36bd500`.
+- Port archive SHA-256: `ec56086b2da94c03a1582394d0958b3ac43742719172889a8bdc1a8168d8cc49` (unchanged).
+- ZIP: `_packages/Ship-9.2.3-pathfinder-speed-final-prism-win64-ship.zip` (102,193,132 bytes).
+- ZIP SHA-256: `65bfe3fa61d114136f329e18e72264e8dad9867ab695c301ba003d73d8840446`.
+
+Release build and all 16 navigation CTest entries passed. Coverage includes native
+Kokiri movement replay, ladder/ledge revalidation, corner following, contact origins,
+actual player OC dimensions, reconnection after movement and native walking surveys
+in Hyrule Field, Kakariko and the Deku Tree. The median old/new search update counts
+were 61/4 (porch heart), 103/11 (porch crawlspace), 10/2 (porch shop), 97/9 (ground
+crawlspace), and 282/3 (porch Lost Woods), across three runs per case. These are
+offline scheduler counts; game frame timing, live actors and controller steering
+still need Amethyst's test. Unchanged mixer, Options and speech suites retain their
+previous results.
+
+All 7,961 package entries and 1,281
+port entries passed CRC validation. Source resources, x64 GUI executable, pinned
+runtime dependencies and thirteen recordings passed verification. No ROM-derived
+fixtures, archives, saves, settings or logs were packaged. Resources did not change.
+
+Pre-task build `3849f4cbee59`, symbols, port archive, checklist and log are preserved
+in `H:/projects/ocarina/backups/9.2.3-before-pathfinder-speed-20260923`. Protected
+archives, saves, settings, layouts, runtime libraries and recordings were verified
+unchanged. Intermediate build `9150cdfec9f2` is separately preserved in
+`../../backups/9.2.3-before-pathfinder-speed-final-20260923`. That intermediate
+deployment preceded removal of a repair-search cancellation condition: joining an
+old waypoint does not prove the blocked next corridor has reopened. Root records
+and the preserved benchmark source are in
+`../../backups/pathfinder-speed-records-20260923`.
+
+Build, test, benchmark, packaging and `pathfinder-speed-final-deployment.json` records are
+under `C:/Users/Amethyst/source/ocarina-build/pathfinder-speed-20260923`. Navigation
+tests additionally configure `NAV_EXTRA_SCENES` to that private fixture directory.
+No game was launched or controlled, and no commits, pushes or submodule changes
+were made. Launch the game afresh; no extraction, settings reset or Windows restart
+is needed. Current manual checks are in `../../todo.md`.
+
+## Previous wall-filter build
+
+Built and deployed on 23 September 2026 as `3849f4cbee59`, at
+`H:/projects/ocarina/game/soh.exe`. Wall sounds now exclude native ladder descent
+surfaces, matching the player's actual climb-entry flags. The preceding pathfinder
+movement fixes are included. The normal wall scan already avoided the tested Kokiri
+landing-floor case; [the source findings](wall-compass-research.md) distinguish that
+from the separate flag omission. At that handoff, the preceding movement update still awaited Amethyst's test; the later speed/guidance report is addressed above.
+The Documents extraction-test copy remains on `3070a31e1701`.
+
+- Executable SHA-256: `3849f4cbee59d590e4f87e7fd234ba7cf2a49da2473707dceca53eac4336998f`.
+- Symbols SHA-256: `992a4c575be56e8403a0c94e1bb4fe63d1b73e254fd5b4a0dd91a41ea8c20f6d`.
+- Port archive SHA-256: `ec56086b2da94c03a1582394d0958b3ac43742719172889a8bdc1a8168d8cc49` (unchanged).
+- ZIP: `_packages/Ship-9.2.3-wall-filter-prism-win64-ship.zip` (101,789,976 bytes).
+- ZIP SHA-256: `a4213d6d9f326b68bdc2fb98b3b1cf5ad354f20111aa71dcd458d51862e8f728`.
+
+Release build, `wall_compass_checks`, `scene_wall_floor_drop` and
+`scene_wall_porch_ladder` passed. The controlled ladder-descent test failed before
+the fix; both native Kokiri wall cases passed before and after. Other navigation,
+mixer, Options and speech code is unchanged and retains its recorded test results.
+Package and port CRCs, source resources, pinned runtimes and all thirteen recordings
+passed verification. No ROM-derived assets, saves, configuration or logs were packaged.
+
+Previous build `b0458fd19e51`, symbols, port archive, checklist and log are preserved in
+`H:/projects/ocarina/backups/9.2.3-before-wall-filter-20260923`. Protected game archives,
+saves, settings, layouts, runtime libraries and recordings were verified unchanged.
+Root notes before editing are in `../../backups/wall-filter-records-20260923`.
+Logs and `wall-filter-deployment.json` are under
+`C:/Users/Amethyst/source/ocarina-build/wall-filter-20260923`.
+
+No game was launched or controlled; there were no commits, pushes or submodule changes.
+Launch the normal game afresh. No extraction, settings reset or Windows restart is
+needed. The listening and controller checklist remains in `../../todo.md`.
+
+## Previous pathfinder movement build
+
+Built and deployed on 23 September 2026 as `b0458fd19e51`, at
+`H:/projects/ocarina/game/soh.exe`. This update connects native ladders and climbable-wall
+ascent, corrects sloping ledge approaches/landings and native downward floor-sweep
+contacts, preserves guidance through traversal animations, and uses native pickup bounds.
+The three logged porch failures now pass in the real collision fixture. Previous menu,
+distance, entrance naming/grouping and verified gate filtering remain included.
+The separate Documents extraction-test copy remains on `3070a31e1701`.
+
+- Executable SHA-256: `b0458fd19e5177ecc26f0ffacdc323b5614a0fa385c26e4cae9969511607b8ea`.
+- Symbols SHA-256: `a3b77a76995a3c39f58329a12cff2223cac4cf6b785e0b386d9bdb52c763d9f8`.
+- Port archive SHA-256: `ec56086b2da94c03a1582394d0958b3ac43742719172889a8bdc1a8168d8cc49`.
+- ZIP: `_packages/Ship-9.2.3-pathfinder-flow-prism-win64-ship.zip` (101,669,388 bytes).
+- ZIP SHA-256: `f6e3805f93148cccda9e39404657da0219ecdb74c0f101a2c18442cd0330e325`.
+
+All 7,961 package entries and 1,281 port entries passed CRC checks.
+Resources match source, all thirteen recordings and runtime dependencies match their
+pinned files, and the executable is x64 GUI. No ROM, extracted game archive, collision
+fixture, private map rendering, save, settings or logs were packaged. The manifest is
+`C:/Users/Amethyst/source/ocarina-build/pathfinder-flow-20260923/pathfinder-flow-deployment.json`.
+Previous build `c4dbf0d6521e`, symbols, port archive, checklist and log are preserved in
+`H:/projects/ocarina/backups/9.2.3-before-pathfinder-flow-20260923`.
+Deployment checked the game was closed and verified protected archives, saves, settings,
+layouts, runtime libraries, controller database and recordings unchanged.
+
+The Release build and all eleven navigation CTest entries passed. Coverage includes
+the three exact logged failures (shop, crawlspace, heart), both directions on the porch
+ladder, climbable-wall ascent, sloped ledges, the upper-area return, a native floor-sweep
+landing and all nine static Kokiri entrance thresholds. Synthetic regressions cover
+pickup bounds and native traversal-state sequences, plus existing wall/ceiling/hazard
+safeguards. Removing climbable flags rejects the corresponding native-fixture links.
+Every reconstructed scene traversal must survive runtime-style revalidation.
+
+No resources changed, so the port archive is unchanged. Unchanged audio, Options and
+speech suites were not rerun; previous manifests retain their results. The scene
+survey does not instantiate live NPC/story actors. Controller steering, ladder controls,
+climb timing, pickup arrival speech and listening still need Amethyst's test in `../../todo.md`.
+The optional spoken climb-direction instruction remains pending in the root question file.
+
+Logs in `C:/Users/Amethyst/source/ocarina-build/pathfinder-flow-20260923`:
+`build-release-final.log`, `build-scene-checks-final.log`, `navigation-tests-final.log`, and `package.log`.
+The same folder holds the private geometry image and before/after route evidence.
+[Source findings](pathfinder.md) record native consumers, map coordinates and remaining limits.
+
+The standalone navigation checks use the existing toolchain and dependencies:
+
+```powershell
+# The extractor creates a new file; it refuses to overwrite an existing fixture.
+py -3.12 H:/projects/ocarina/Shipwright/tests/navigation/extract_scene_fixture.py H:/projects/ocarina/game/oot.o2r C:/Users/Amethyst/source/ocarina-build/navigation-field-checks/kokiri.collision
+& $shipCmake -S H:/projects/ocarina/Shipwright/tests/navigation -B C:/Users/Amethyst/source/ocarina-build/navigation-checks -A x64 -DNAV_VCPKG:PATH=C:/Users/Amethyst/source/ocarina-build/vcpkg/installed/x64-windows-static -DNAV_KOKIRI_FIXTURE:FILEPATH=C:/Users/Amethyst/source/ocarina-build/navigation-field-checks/kokiri.collision
+& $shipCmake --build C:/Users/Amethyst/source/ocarina-build/navigation-checks --config Release --parallel 4
+& $shipCtest --test-dir C:/Users/Amethyst/source/ocarina-build/navigation-checks -C Release --output-on-failure
+```
+
+`shipCmake` and `shipCtest` refer to the bundled CMake and adjacent CTest under the
+Visual Studio 2022 Build Tools path documented below. Never package the private fixture.
+No libultraship changes, commits, pushes or game launches were made.
+The pre-change checklist, release guide, questions, log and source/build notes are preserved
+in `../../backups/pathfinder-flow-records-20260923`. Launch the normal game afresh;
+no extraction, settings reset or Windows restart is required.
+
+## Previous setup build, retained in the Documents test copy
+
+Built and deployed on 22 September 2026. Build ID: `3070a31e1701`. Launch paths:
+`C:\Users\Amethyst\Documents\ocarina\soh.exe` for the fresh-install test and
+`H:\projects\ocarina\game\soh.exe` for ordinary play. This build moves graphics-debugger
+initialization before window construction, fixing the null service used by setup rendering
+after ROM selection. See [the crash evidence](setup-crash-20260922.md). Audio and Prism code
+are unchanged. Headphone uses Steam Audio HRTF for verified world
 sources; Surround uses Windows spatial sound with a 7.1.4 bed. Stereo and Mono retain the
 native path. Music stays outside Steam Audio. A Windows headphone spatial provider can
 still externalize the stereo music bed in Surround; see [spatial-audio.md](spatial-audio.md).
@@ -44,30 +196,34 @@ runtime assets and notices. No other game's files are needed at runtime.
 
 SHA-256 values:
 
-- Package `_packages/Ship-9.2.3-cue-loops-prism-win64-ship.zip`: `e976ff8b51e541ea090a06fc0dfcb989eb2bb5d41fb7d01ca7a4c0de61482cf9`.
-- `soh.exe`: `d4342490da07723a26936a790f73c5ec3db2af60273a41535fdccdff9f34ba78`.
+- Package `_packages/Ship-9.2.3-setup-fix-prism-win64-ship.zip`: `df9ac94537c78429e61a6d065dd01af119549f9217bfe9c4c1740a61c05a4c5d`.
+- `soh.exe`: `3070a31e1701019b519266f2ad455657a188066c282e211f3de94ec6f28deaac`.
 - `soh.o2r`: `22207ca2cbfcc8881e4825a46c710493f82aa3c6bd5cbfe21bca5ecb72993dce`.
 - `phonon.dll`: `ca3dbc01dbc24492717011e80f6a51404ca143ae344ca660971d2c983f1e058d`.
 - `prism.dll`: `cb9712e11af9ebe96457dbf8f5daad4a6c359ae1f59cdf2663282b3a9cc9759c`.
-- `debug/soh.pdb`: `fd8a23f115e8aeccda9c9a3d019331625d3897d7193140a354dc5a5c788c4e87`.
+- `debug/soh.pdb`: `13e6b7b5ffda6b3e549b1b7c01553791c59906168490229e9d599a4d912cd858`.
 
 All 7,961 package entries and 1,280 port entries passed CRC checks.
 Packaged accessibility text matches source. The executable is Windows x64 GUI; packaged
 runtime DLLs and all thirteen recordings match their verified source hashes. No ROMs,
 extracted game archives, saves or personal configuration are packaged.
 
-Deployed files match the package. Replaced files and the prior checklist/log are backed up
-in `H:\projects\ocarina\backups\9.2.3-before-cue-loops-20260922`, preserving build
-`05bfdd1a3a0e`. Build `d1b8d8a98841` remains in `9.2.3-before-wall-compass-20260922`. The first spatial build `cb0b1718f56e` remains in the earlier
+Deployed files match the package in both copies. Only their executable and symbols changed.
+The prior binaries, checklist and installation guide are backed up in
+`H:\projects\ocarina\backups\9.2.3-before-setup-fix-20260922`, preserving build `d4342490da07`.
+The earlier `9.2.3-before-cue-loops-20260922` backup preserves build `05bfdd1a3a0e`.
+Build `d1b8d8a98841` remains in `9.2.3-before-wall-compass-20260922`. The first spatial build `cb0b1718f56e` remains in the earlier
 `9.2.3-before-spatial-cues-20260922` backup, and the pre-spatial build remains in
 `9.2.3-before-spatial-audio-20260922`. Game archives, saves, configuration, Prism and overlay
 layout were hash-verified unchanged. No game was launched, controlled or closed. Amethyst
-launches the new build herself; no extraction or Windows restart is needed. Checks are in
+retries extraction in the Documents copy herself; the normal installation needs no extraction.
+No Windows restart is needed. Checks are in
 [todo.md](../../todo.md).
 
-The four audio/wall/compass suites passed for this update, including reference timing and
-waveform checks for all thirteen loops. The two Native Options suites and speech suite passed
-for the previous build; their code and text have not changed in this update. The production wall scanner uses controlled native-query
+The Release build, both Native Options suites and the speech suite passed for this setup fix.
+The four audio/wall/compass suites passed for the preceding cue-timing update, including
+reference timing and waveform checks for all thirteen loops; their code is unchanged here.
+The production wall scanner uses controlled native-query
 fixtures for offline verification; this does not prove real-room coverage or runtime cost.
 All thirteen recordings passed playback/completion checks, with continued looping and
 cleanup tested for walls. The earlier production Windows backend probe rendered 72,000
@@ -75,7 +231,13 @@ silent frames; this does not establish enabled Atmos or audible height speakers.
 HRTF benchmark rendered 64 continuous sources for one audio second in about 61 milliseconds.
 Windows x64 was built; Linux/macOS HRTF paths remain untested here.
 
-Logs and `cue-loops-deployment-manifest.json` are in
+Current build/package logs and `setup-fix-deployment-manifest.json` are in
+`C:\Users\Amethyst\source\ocarina-build\setup-crash-20260922`:
+`build-setup-fix.log` and `package-setup-fix.log`. The manifest records both target copies,
+their previous executable/symbol hashes, backups and unchanged personal files. Complete
+extraction remains untested in game. Use the setup-fix ZIP in place of the cue-loops ZIP.
+
+Earlier audio logs and `cue-loops-deployment-manifest.json` are in
 `C:\Users\Amethyst\source\ocarina-build\spatial-audio-20260921`. Final build log:
 `build-cue-loops.log`; package log: `package-cue-loops.log`; test build log:
 `build-cue-loops-checks.log`. The unchanged port archive was generated previously in
@@ -85,8 +247,10 @@ and `SPATIAL_VCPKG` to the existing `x64-windows-static` triplet. Use the VS 202
 commands below; regenerate `GenerateSohOtr` when text changes. The existing verified SDK was
 reused with `FETCHCONTENT_SOURCE_DIR_STEAM_AUDIO`; fresh builds use the pinned download.
 
-Amethyst authorized committing and publishing all project changes on 22 September 2026.
-The `accessibility` branch in `RealAmethyst/libultraship` supplies the modified library;
+Amethyst's earlier publication request was completed with Shipwright `260e71384` and
+libultraship `3f465487` on their `accessibility` branches. This subsequent setup fix and its
+documentation remain local and uncommitted; the library is unchanged. The
+`accessibility` branch in `RealAmethyst/libultraship` supplies the modified library;
 `.gitmodules` points to that fork. Publish the library first, followed by the parent branch.
 Prior local accessibility commits remain in both histories. The installation/release guide
 is outside this repository at `../../installation-and-release.md`, as requested, and is not
@@ -129,17 +293,16 @@ Logs and `file-return-manifest.json` are in `C:\Users\Amethyst\source\ocarina-bu
 No game was launched or controlled by Codex. The focused file-return test remains in [todo.md](../../todo.md).
 No extraction or Windows restart is needed.
 
-## Local accessibility checkpoint
+## Earlier local accessibility checkpoint
 
-The Shipwright accessibility branch includes the native setup, Prism and native Options work. Its libultraship
-submodule points to local commit `0eeb24cbfb03f324e342ee95ff84087b765e2383` on that submodule's `accessibility` branch.
+At this earlier checkpoint, the Shipwright accessibility branch included the native setup, Prism and native Options work. Its libultraship
+submodule pointed to local commit `0eeb24cbfb03f324e342ee95ff84087b765e2383` on that submodule's `accessibility` branch.
 The source contents were built before recording the commits; the installed executable is identified by the hash
 above, and its embedded release base still says cb71e22. Both commits include Codex attribution.
 
-No commits have been pushed. The library commit exists locally under Shipwright's submodule repository; publishing
-the superproject later also requires making that submodule commit available from an appropriate remote. The current
-GitHub fork contains the upstream release until the user authorizes publication. Game data, downloaded dependencies,
-logs, build outputs and distribution archives are excluded from the commits.
+No commits had been pushed at that checkpoint. Those commits were subsequently included in
+the 22 September publication described above. Game data, downloaded dependencies, logs,
+build outputs and distribution archives are excluded from the commits.
 
 ## Previous Prism build
 

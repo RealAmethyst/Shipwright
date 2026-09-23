@@ -152,6 +152,7 @@ std::vector<DrawCommand> Layout(const Model& model, const std::string& footer, c
     }
     canvas.Rect(19, 17, 282, 206, { 4, 15, 42, 155 });
     canvas.Text(page->title, 26, 20, 226, 0.85f, gold);
+    if (!page->section.empty()) canvas.Text(page->section, 28, 40, 262, 0.60f, gold);
     const auto& rows = model.Rows();
     const auto selection = model.Selection();
     if (!rows.empty() && (!page->popup || rows.size() > 1))
@@ -182,7 +183,8 @@ std::vector<DrawCommand> Layout(const Model& model, const std::string& footer, c
     const size_t first = (selection / visibleRows) * visibleRows;
     for (size_t i = first; i < std::min(rows.size(), first + visibleRows); ++i) {
         const auto& row = rows[i];
-        const float y = 45.0f + static_cast<float>(i - first) * 21.0f;
+        const float y = page->section.empty() ? 45.0f + static_cast<float>(i - first) * 21.0f :
+                                              55.0f + static_cast<float>(i - first) * 19.0f;
         const bool focused = i == selection;
         if (focused) {
             canvas.Rect(23, y - 2, 274, 20, { 57, 72, 92, 245 });

@@ -302,6 +302,13 @@ s16 Entrance_OverrideDynamicExit(s16 dynamicExitIndex) {
     return Grotto_OverrideSpecialEntrance(Entrance_GetOverride(dynamicExitList[dynamicExitIndex]));
 }
 
+s16 Entrance_PeekDynamicExitOverride(s16 dynamicExitIndex) {
+    if (dynamicExitIndex < 0 || dynamicExitIndex >= ARRAY_COUNT(dynamicExitList)) {
+        return -1;
+    }
+    return Entrance_PeekNextIndexOverride(dynamicExitList[dynamicExitIndex]);
+}
+
 u32 Entrance_SceneAndSpawnAre(u8 scene, u8 spawn) {
     s16 entranceIndex;
 

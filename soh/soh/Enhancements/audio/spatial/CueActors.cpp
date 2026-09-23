@@ -4,6 +4,9 @@
 #include "WorldCompass.h"
 #include "soh/Enhancements/game-interactor/GameInteractor.h"
 #include "soh/NativeOptions/NativeOptions.h"
+#include "soh/Enhancements/navigation/Navigation.h"
+#include "soh/Enhancements/navigation/Destination.h"
+#include "soh/Enhancements/navigation/SurfaceGroups.h"
 #include "soh/ResourceManagerHelpers.h"
 #include <libultraship/libultraship.h>
 #include <algorithm>
@@ -20,6 +23,7 @@ extern "C" {
 #include "overlays/actors/ovl_En_Ge1/z_en_ge1.h"
 #include "overlays/actors/ovl_En_Wood02/z_en_wood02.h"
 #include "overlays/actors/ovl_En_Kusa/z_en_kusa.h"
+#include "overlays/actors/ovl_Bg_Treemouth/z_bg_treemouth.h"
 void EnBox_WaitOpen(EnBox*, PlayState*);
 void EnGSwitch_SilverRupeeIdle(EnGSwitch*, PlayState*);
 void EnKarebaba_DeadItemDrop(EnKarebaba*, PlayState*);
@@ -30,6 +34,7 @@ void EnGe1_WatchForAndSensePlayer(EnGe1*, PlayState*);
 void EnGe1_KickPlayer(EnGe1*, PlayState*);
 void EnKusa_Main(EnKusa*, PlayState*);
 void CollisionPoly_GetVertices(CollisionPoly*, Vec3s*, Vec3f*);
+s32 Player_PeekExitEntrance(PlayState*, s32);
 }
 
 namespace SpatialAudio {
@@ -44,6 +49,7 @@ struct Exit {
     Tracked tracked;
     Vec3f position;
     int destination;
+    uint32_t index;
 };
 struct SurfaceCue { Tracked tracked; Vec3f position; };
 struct LocationCue { Tracked tracked; const CueLocation* location; };
@@ -103,7 +109,7 @@ bool Available(Actor* actor, PlayState* play) {
         }
         case ACTOR_EN_BOX:
             return reinterpret_cast<EnBox*>(actor)->actionFunc == EnBox_WaitOpen &&
-                   !Flags_GetTreasure(play, actor->params & 0x1f) && (actor->params & 0x1f) < 20;
+                   !Flags_GetTreasure(play, actor->params & 0x1f);
         case ACTOR_EN_ELF:
             return actor->category == ACTORCAT_ITEMACTION &&
                    (actor->params == FAIRY_HEAL || actor->params == FAIRY_HEAL_TIMED || actor->params == FAIRY_HEAL_BIG);
@@ -194,43 +200,63 @@ void FindGeometryCues(PlayState* play) {
     if (!boundedExits) {
         SPDLOG_WARN("Accessibility scene exits unavailable: no matching bounded native exit list");
     }
-    for (size_t i = 0; i < collision->numPolygons; ++i) {
-        auto* poly = &collision->polyList[i];
+    const auto groups = Navigation::GroupSurfaces(collision, [&](CollisionPoly* poly) {
         const auto wallFlags = func_80041DB8(&play->colCtx, poly, BGCHECK_SCENE);
-        const bool climbable = wallFlags == 8 || wallFlags == 3;
-        const auto index = SurfaceType_GetSceneExitIndex(&play->colCtx, poly, BGCHECK_SCENE);
-        if (!climbable && (!index || !boundedExits)) continue;
-        int destination = -1;
-        if (!climbable && !genericExit) {
-            if (index > exitCount || exitList[index - 1] < 0 || exitList[index - 1] >= ENTR_MAX) {
-                SPDLOG_WARN("Accessibility scene exit rejected: polygon {}, exit index {}", i, index);
-                continue;
+        if (wallFlags & (2 | 4 | 8)) return -static_cast<int>(wallFlags);
+        return boundedExits && poly->normal.y > 0 ?
+            static_cast<int>(SurfaceType_GetSceneExitIndex(&play->colCtx, poly, BGCHECK_SCENE)) : 0;
+    });
+    for (const auto& group : groups) {
+        Vec3f position{group.position.x, group.position.y, group.position.z};
+        if (group.tag < 0) {
+            for (auto index : group.polygons) {
+                Vec3f vertices[3];
+                CollisionPoly_GetVertices(&collision->polyList[index], collision->vtxList, vertices);
+                for (const auto& vertex : vertices) position.y = std::min(position.y, vertex.y);
             }
-            destination = gEntranceTable[exitList[index - 1]].scene;
-        }
-        Vec3f vertices[3];
-        CollisionPoly_GetVertices(poly, collision->vtxList, vertices);
-        Vec3f position{
-            (std::min({vertices[0].x, vertices[1].x, vertices[2].x}) + std::max({vertices[0].x, vertices[1].x, vertices[2].x})) / 2,
-            std::min({vertices[0].y, vertices[1].y, vertices[2].y}),
-            (std::min({vertices[0].z, vertices[1].z, vertices[2].z}) + std::max({vertices[0].z, vertices[1].z, vertices[2].z})) / 2};
-        if (climbable) {
-            const bool duplicate = std::any_of(climbs.begin(), climbs.end(), [&](const SurfaceCue& cue) {
-                return Distance(position, cue.position) < 1;
-            });
-            if (!duplicate) climbs.push_back({NewTracked({Cue::Ladder}), position});
+            climbs.push_back({NewTracked({Cue::Ladder}), position});
             continue;
         }
-        const bool duplicate = std::any_of(exits.begin(), exits.end(), [&](const Exit& exit) {
-            return exit.destination == destination && Distance(position, exit.position) < 1;
-        });
-        if (!duplicate) exits.push_back({NewTracked({Cue::Transition, 1500, 2000}), position, destination});
+        const auto index = static_cast<uint32_t>(group.tag);
+        if (!genericExit && (index > exitCount || exitList[index - 1] < 0)) {
+            SPDLOG_WARN("Accessibility scene exit rejected: exit index {}", index);
+            continue;
+        }
+        const int entrance = Player_PeekExitEntrance(play, genericExit ? ENTR_RETURN_GROTTO : exitList[index - 1]);
+        if (entrance < 0) continue;
+        const int destination = gEntranceTable[entrance].scene;
+        exits.push_back({NewTracked({Navigation::Building(destination) ? Cue::Door : Cue::Transition,
+                                     1500, 2000}), position, destination, index});
     }
 }
 
+bool ExitAvailable(PlayState* play, const Exit& exit) {
+    // Check the original threshold, before any destination randomization. Gates
+    // belong to that threshold even when it now leads to a different scene.
+    const int entrance = exit.index && exit.index <= exitCount && exitList == play->setupExitList ?
+        exitList[exit.index - 1] : -1;
+    if (play->sceneNum == SCENE_KOKIRI_FOREST && entrance == ENTR_DEKU_TREE_ENTRANCE) {
+        auto* actor = Actor_Find(&play->actorCtx, ACTOR_BG_TREEMOUTH, ACTORCAT_BG);
+        if (!actor || actor->init || !actor->update || !(reinterpret_cast<BgTreemouth*>(actor)->unk_168 >= 1)) return false;
+    }
+    if (play->sceneNum == SCENE_KAKARIKO_VILLAGE && entrance == ENTR_BOTTOM_OF_THE_WELL_ENTRANCE) {
+        if (Actor_Find(&play->actorCtx, ACTOR_BG_SPOT01_IDOSOKO, ACTORCAT_BG)) return false;
+        if (!LINK_IS_ADULT && !Flags_GetEventChkInf(EVENTCHKINF_DRAINED_WELL_IN_KAKARIKO)) return false;
+    }
+    // A dynamic floor can cover a static exit. Use the same entity-filtered
+    // floor query as Player_HandleExitsAndVoids, rather than just the asset list.
+    Vec3f ray{exit.position.x, exit.position.y + 50, exit.position.z};
+    CollisionPoly* floor = nullptr;
+    s32 owner = BGCHECK_SCENE;
+    BgCheck_EntityRaycastFloor3(&play->colCtx, &floor, &owner, &ray);
+    return floor && owner == BGCHECK_SCENE &&
+        SurfaceType_GetSceneExitIndex(&play->colCtx, floor, owner) == exit.index;
+}
+
 // Visibility/range conditions from PR 5435's accessible_area_change. Recording
-// selection is deliberately separate: every approved exit uses transition.wav.
+// selection is separate: building thresholds use door.wav, map exits transition.wav.
 bool ExitRange(PlayState* play, const Exit& exit, float xz, float y, float distance, float& range, float& gain) {
+    if (!ExitAvailable(play, exit)) return false;
     const int scene = play->sceneNum, target = exit.destination;
     range = 1500;
     gain = 1;
@@ -243,8 +269,6 @@ bool ExitRange(PlayState* play, const Exit& exit, float xz, float y, float dista
         if (target == SCENE_GRAVEYARD || target == SCENE_HYRULE_FIELD || target == SCENE_DEATH_MOUNTAIN_TRAIL) {
             if (y > 5000 || xz > 8000) return false;
             if (xz > 700) range = distance * (target == SCENE_HYRULE_FIELD ? 1.4f : 1.2f);
-        } else if (target == SCENE_BOTTOM_OF_THE_WELL) {
-            if (!Flags_GetEventChkInf(EVENTCHKINF_DRAINED_WELL_IN_KAKARIKO)) return false;
         } else { range = 1000; if (y > 500 || xz > 1000) return false; }
     } else if (scene == SCENE_LOST_WOODS || scene == SCENE_CASTLE_COURTYARD_GUARDS_DAY ||
                scene == SCENE_CASTLE_COURTYARD_GUARDS_NIGHT) { range = 1000; if (xz > 1000) return false; }
@@ -397,6 +421,10 @@ void UpdateCues(PlayState* play) {
     }
     for (auto& location : locations) {
         Vec3f position;
+        if (location.location->cue == Cue::Pathfinder && Navigation_HasRoute()) {
+            cueMixer.Stop(location.tracked.identity);
+            continue;
+        }
         if (!LocationPosition(play, *location.location, position)) { cueMixer.Stop(location.tracked.identity); continue; }
         UpdateSound(location.tracked, position, Distance(position, origin), location.tracked.policy.range, 1);
     }
@@ -410,6 +438,32 @@ void UpdateCues(PlayState* play) {
     }
 }
 void ShutdownCues() { running = false; ResetScene(); }
+std::vector<CueTarget> NavigationTargets(PlayState* play) {
+    std::vector<CueTarget> result;
+    if (!running || !play || !GET_PLAYER(play)) return result;
+    FindGeometryCues(play);
+    for (const auto& [actor, tracked] : actors) {
+        if (actor->category == ACTORCAT_ENEMY || actor->category == ACTORCAT_BOSS || !Available(actor, play) ||
+            (actor->room >= 0 && actor->room != play->roomCtx.curRoom.num)) continue;
+        const auto& p = actor->world.pos;
+        result.push_back({tracked.identity, actor, tracked.policy.cue, p.x, p.y, p.z});
+    }
+    for (const auto& climb : climbs) {
+        const auto& p = climb.position;
+        result.push_back({climb.tracked.identity, nullptr, Cue::Ladder, p.x, p.y, p.z});
+    }
+    for (size_t i = 0; i < std::size(CueLocations); ++i) {
+        Vec3f p;
+        if (LocationPosition(play, CueLocations[i], p))
+            result.push_back({(uint64_t{1} << 62) + i, nullptr, CueLocations[i].cue, p.x, p.y, p.z});
+    }
+    for (const auto& exit : exits) {
+        if (!ExitAvailable(play, exit)) continue;
+        const auto& p = exit.position;
+        result.push_back({exit.tracked.identity, nullptr, exit.tracked.policy.cue, p.x, p.y, p.z, exit.destination});
+    }
+    return result;
+}
 void SetSceneExits(const int16_t* data, size_t count) { exitList = data; exitCount = count; collision = nullptr; }
 CueMixer& GetCueMixer() { return cueMixer; }
 float CueMasterGain() { return masterGain; }

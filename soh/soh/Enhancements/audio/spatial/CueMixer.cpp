@@ -53,7 +53,7 @@ bool CueMixer::Play(uint64_t identity, Cue cue) {
     if (!identity || index >= samples.size() || samples[index].empty()) return false;
     Voice* voice = nullptr;
     for (auto& candidate : voices) if (candidate.identity == identity) { voice = &candidate; break; }
-    if (!voice) for (auto& candidate : voices) if (!candidate.identity) { voice = &candidate; break; }
+    if (!voice) for (size_t i = 0; i < MaxVoices; ++i) if (!voices[i].identity) { voice = &voices[i]; break; }
     if (!voice) return false;
     *voice = {identity, cue, 0, {}, 0};
     return true;
@@ -67,6 +67,18 @@ bool CueMixer::KeepPlaying(uint64_t identity, Cue cue) {
     }
     if (!Play(identity, cue)) return false;
     for (auto& voice : voices) if (voice.identity == identity) voice.repeat = true;
+    return true;
+}
+
+bool CueMixer::KeepPlayingInterval(uint64_t identity, Cue cue, float seconds) {
+    if (!std::isfinite(seconds) || seconds <= 0 || seconds > 60) { Stop(identity); return false; }
+    const auto index = static_cast<size_t>(cue);
+    if (!identity || index >= samples.size() || samples[index].empty()) return false;
+    auto& voice = voices.back();
+    if (voice.identity && voice.identity != identity) return false;
+    if (!voice.identity || voice.cue != cue) voice = {identity, cue, 0, {}, 0};
+    voice.repeat = true;
+    voice.interval = std::max(size_t{1}, static_cast<size_t>(seconds * 32000));
     return true;
 }
 
@@ -94,8 +106,9 @@ void CueMixer::Render(int frames, float gameGain, void* context, RenderCallback 
         const bool wall = voice.repeat && voice.cue >= Cue::WallNorth && voice.cue <= Cue::WallWest;
         const size_t overlap = wall ? std::min(FadeSamples, pcm.size() / 2) : 0;
         const bool destructible = voice.repeat && voice.cue == Cue::Destructible;
-        const size_t length = destructible ? std::min(pcm.size(), DestructibleCycle) : pcm.size();
-        const size_t gap = destructible ? std::max(size_t{1}, DestructibleCycle - length) : LoopGap;
+        const size_t cycle = voice.interval ? voice.interval : destructible ? DestructibleCycle : 0;
+        const size_t length = cycle ? std::min(pcm.size(), cycle) : pcm.size();
+        const size_t gap = cycle ? std::max(size_t{1}, cycle - length) : LoopGap;
         const float gain = voice.gain * std::clamp(gameGain, 0.0f, 1.0f);
         block.fill(0);
         for (int f = 0; f < frames; ++f) {

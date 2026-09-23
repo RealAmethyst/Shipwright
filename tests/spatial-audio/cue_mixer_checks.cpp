@@ -89,6 +89,32 @@ static void CheckLoops(CueMixer& mixer, const std::string& directory) {
         std::cout << CueNames[id] << ": " << period / 32.0 << " ms repeat, reference waveform verified\n";
     }
 }
+static void CheckNavigationLoop(CueMixer& mixer) {
+    for (float seconds : {0.15f, 0.825f, 1.5f}) {
+        const size_t period = static_cast<size_t>(seconds * 32000);
+        auto render = [&](int block) {
+            mixer.StopAll(); Output output;
+            while (output.pcm.size() < period * 3) {
+                Check(mixer.KeepPlayingInterval(77, Cue::Pathfinder, seconds), "navigation voice failed");
+                mixer.Update(77, {77, -1, 0, 0}, 1);
+                mixer.Render(static_cast<int>(std::min(size_t(block), period * 3 - output.pcm.size())), 1, &output, Capture);
+            }
+            return output.pcm;
+        };
+        const auto a = render(192), b = render(113);
+        Check(a == b, "navigation interval depends on audio block size");
+        Check(std::any_of(a.begin(), a.begin() + period, [](float v) { return std::abs(v) > 0.0001f; }), "navigation clip is silent");
+        for (size_t i = 0; i + period < a.size(); ++i) Check(a[i] == a[i + period], "navigation loop interval is wrong");
+    }
+    mixer.StopAll();
+    Check(!mixer.KeepPlayingInterval(77, Cue::Pathfinder, NAN) && mixer.ActiveVoices() == 0, "invalid interval retained voice");
+    for (uint64_t i = 1; i <= CueMixer::MaxVoices; ++i) Check(mixer.Play(i, Cue::Door), "ordinary pool lost capacity");
+    Check(mixer.KeepPlayingInterval(999, Cue::Pathfinder, 0.15f) && mixer.ActiveVoices() == CueMixer::MaxVoices + 1,
+          "busy ordinary cues displaced selected guidance");
+    Check(!mixer.KeepPlayingInterval(1000, Cue::Pathfinder, 0.15f), "second route replaced an unrelated owner");
+    mixer.StopAll();
+}
+
 int main(int argc, char** argv) {
     try {
         Check(argc == 2, "Supply bundled cue directory");
@@ -139,6 +165,7 @@ int main(int argc, char** argv) {
         mixer.StopAll();
         Check(mixer.ActiveVoices() == 0, "wall loop survived scene cleanup");
         CheckLoops(mixer, argv[1]);
+        CheckNavigationLoop(mixer);
         Check(mixer.KeepPlaying(8, Cue::Person), "person loop did not resume");
         mixer.Update(8, {8, -1, 0, 0}, 1);
         Output active;

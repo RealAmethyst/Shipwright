@@ -71,7 +71,8 @@ class Probe {
     }
     bool ClimbableWall() const {
         const int flags = func_80041DB8(&play->colCtx, wall, wallId);
-        return (flags & 8) || (flags & 2);
+        // Player's func_8083EC18 accepts vines, ladder ascent and ladder descent.
+        return (flags & (8 | 2 | 4)) != 0;
     }
     bool Lava(Vec3f point) const {
         CollisionPoly* poly = nullptr;

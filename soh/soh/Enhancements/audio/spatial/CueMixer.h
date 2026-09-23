@@ -23,6 +23,8 @@ class CueMixer {
     bool Load(Cue cue, const std::string& path, std::string& error);
     bool Play(uint64_t identity, Cue cue);
     bool KeepPlaying(uint64_t identity, Cue cue);
+    // Selected guidance has one reserved voice in addition to the ordinary pool.
+    bool KeepPlayingInterval(uint64_t identity, Cue cue, float seconds);
     void Update(uint64_t identity, SpatialAudioSource source, float gain);
     void Stop(uint64_t identity);
     void StopAll();
@@ -38,8 +40,9 @@ class CueMixer {
         float gain = 0;
         bool repeat = false;
         size_t gap = 0;
+        size_t interval = 0;
     };
     std::array<std::vector<float>, static_cast<size_t>(Cue::Count)> samples;
-    std::array<Voice, MaxVoices> voices{};
+    std::array<Voice, MaxVoices + 1> voices{};
 };
 }

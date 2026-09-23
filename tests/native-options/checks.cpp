@@ -407,9 +407,33 @@ static void FeedbackChecks() {
 
 void DisplayListChecks();
 
+static void SectionChecks() {
+    bool ready = false;
+    auto page = MakePage("navigation", "Navigation", [&] {
+        return ready ? std::vector<Row>{Action("one", "First", {}), Action("two", "Second", {})} : std::vector<Row>{};
+    });
+    page->section = "People";
+    page->hints = "Browse targets";
+    auto& model = GetModel();
+    model.Open(page);
+    auto speech = model.TakeSpeech();
+    Check(speech.size() == 2 && speech[0].text == "Navigation" && speech[0].interrupt &&
+          speech[1].text == "People" && !speech[1].interrupt, "Title and section must queue in order");
+    ready = true; model.Refresh(); speech = model.TakeSpeech();
+    Check(speech.size() == 2 && speech[0].text == "First, 1 of 2" && !speech[0].interrupt &&
+          speech[1].text == "Browse targets" && !speech[1].interrupt, "Delayed section item lost its queue or hints");
+    model.Move(1); speech = model.TakeSpeech();
+    Check(speech.size() == 1 && speech[0].text == "Second, 2 of 2" && speech[0].interrupt, "Row repeated its section");
+    model.SetSection("Doors"); speech = model.TakeSpeech();
+    Check(speech.size() == 2 && speech[0].text == "Doors" && speech[0].interrupt &&
+          speech[1].text == "First, 1 of 2" && !speech[1].interrupt, "Section change repeated the title or hints");
+    model.Close();
+}
+
 int main(int argc, char** argv) {
     try {
         NavigationChecks();
+        SectionChecks();
         InputTransitionChecks();
         ControlChecks();
         TextEntryChecks();
@@ -444,6 +468,7 @@ int main(int argc, char** argv) {
             page->initialFocus = request.value("focus", rows.empty() ? "" : rows.front().id);
             page->popup = request.value("popup", false);
             page->description = request.value("description", "");
+            page->section = request.value("section", "");
             page->documentLines = request.value("documentLines", std::vector<std::string>{});
             page->footer = request.value("footer", "");
             if (request.contains("image")) {

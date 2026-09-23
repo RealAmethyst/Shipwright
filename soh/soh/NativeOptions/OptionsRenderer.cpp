@@ -146,6 +146,10 @@ extern "C" void NativeOptions_DrawTitleMenu(GraphicsContext* gfxCtx, const char*
         NativeOptions::Text("title_navigation"), selected, alpha, Ship_GetCharFontWidth, NativeOptions::Encode));
 }
 
+void NativeOptions::DrawModel(GraphicsContext* gfxCtx, const Model& model, const std::string& footer) {
+    DrawCommands(gfxCtx, Layout(model, footer, Ship_GetCharFontWidth, Encode));
+}
+
 extern "C" void NativeOptions_Draw(GraphicsContext* gfxCtx) {
     const auto commands = NativeOptions::Layout(NativeOptions::GetModel(), NativeOptions::Text("hints"),
                                                 Ship_GetCharFontWidth, NativeOptions::Encode);

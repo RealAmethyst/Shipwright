@@ -35,7 +35,7 @@ void RequestPage(std::string name) {
     NativeOptions_Open();
 }
 
-static std::string ResourceText(const std::string& bank, const std::string& key) {
+std::string ResourceText(const std::string& bank, const std::string& key) {
     auto& strings = textBanks[bank];
     if (!strings.is_object()) {
         auto data = std::make_shared<Ship::ResourceInitData>();

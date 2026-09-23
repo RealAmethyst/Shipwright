@@ -36,6 +36,7 @@ struct Row {
 struct Page {
     std::string id;
     std::string title;
+    std::string section;
     std::string description;
     std::string hints;
     std::string footer;
@@ -71,6 +72,7 @@ class Model {
     void Back(std::function<void()> apply = {});
     void Close();
     void Refresh();
+    void SetSection(std::string section);
     void Move(int delta);
     void Activate();
     void Adjust(int direction);

@@ -31,6 +31,8 @@ using PageFactory = std::function<PagePtr()>;
 using TextValidator = std::function<std::string(const std::string&)>;
 
 Model& GetModel();
+void DrawModel(GraphicsContext* gfxCtx, const Model& model, const std::string& footer);
+std::string ResourceText(const std::string& bank, const std::string& key);
 std::string Text(const std::string& key);
 std::string OriginalOptionText(const std::string& key);
 std::string OriginalItemText(int item);

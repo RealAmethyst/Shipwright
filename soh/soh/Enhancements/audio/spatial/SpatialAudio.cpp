@@ -3,6 +3,7 @@
 #include "SpeakerPanner.h"
 #include "CueActors.h"
 #include "soh/Enhancements/tts/CompassSpeech.h"
+#include "soh/Enhancements/navigation/Navigation.h"
 
 #include <libultraship/libultraship.h>
 #include <algorithm>
@@ -177,6 +178,7 @@ extern "C" void SpatialAudio_PublishListener() {
         sources.clear();
         channels.fill({});
         SpatialAudio::UpdateCues(nullptr);
+        Navigation_PublishAudio(nullptr);
         return;
     }
     Matrix_MtxToMtxF(&gPlayState->view.viewing, &listener);
@@ -186,6 +188,7 @@ extern "C" void SpatialAudio_PublishListener() {
     for (auto& [key, source] : sources)
         source.snapshot = Direction(source.snapshot.identity, source.projection.world);
     SpatialAudio::UpdateCues(gPlayState);
+    Navigation_PublishAudio(gPlayState);
 }
 
 extern "C" SpatialAudioSource SpatialAudio_WorldSource(uint64_t identity, float x, float y, float z) {

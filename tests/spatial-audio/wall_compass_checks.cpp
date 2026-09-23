@@ -164,8 +164,10 @@ int main() {
         spiked = true;
         Check(!scan()[0].found, "spikes mislabeled as ordinary wall");
         Reset();
-        wallFlags = 8;
-        Check(!scan()[0].found, "climbable wall mislabeled as blocking wall");
+        for (int flags : {3, 5, 8}) {
+            wallFlags = flags;
+            Check(!scan()[0].found, "ladder ascent, descent or vines mislabeled as blocking wall");
+        }
         Reset();
         terrain = Terrain::Ledge;
         barrierHeight = 60;
