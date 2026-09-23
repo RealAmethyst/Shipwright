@@ -4,6 +4,7 @@ This work extends Shipwright 9.2.3's existing speech. Amethyst confirmed that sp
 
 ## Dependencies and startup
 
+- The fresh-install crash after ROM selection on build `d4342490da07` came from GUI debugger callbacks querying a service that was initialized only after extraction. Build `3070a31e1701` initializes it before the window is created. Prism is not on the failing call path, and the speech DLL/code are unchanged. See [the dump and source trace](setup-crash-20260922.md); extraction speech still needs Amethyst's test with this build.
 - The speech library is ethindp/Prism 0.18.2, source commit `f237af67d0460a6dad312cc446623856ad823c50`. It is distinct from libultraship's shader processor named prism.
 - `CMake/PrismSpeech.cmake` downloads the official Windows x64 archive with a pinned SHA-256. Packaging includes its unmodified DLL and licenses. Other desktop builds require the matching official Prism SDK; consoles compile without a speech backend. Only Windows is validated here.
 - The release's actual `PrismConfig` is version 3. `prism_config_init`, `prism_init`, and `prism_registry_create_best` establish the backend; `create_best` already initializes it. Do not call backend initialization a second time. Free the backend before shutting down the context.
