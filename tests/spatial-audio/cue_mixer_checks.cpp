@@ -115,6 +115,30 @@ static void CheckNavigationLoop(CueMixer& mixer) {
     mixer.StopAll();
 }
 
+static void CheckAimPulse(CueMixer& mixer) {
+    for (float seconds : {0.16f, 0.8f, 1.5f}) {
+        const size_t period = static_cast<size_t>(seconds * 32000);
+        auto render = [&](int block) {
+            mixer.StopAll(); Output output;
+            while (output.pcm.size() < period * 3) {
+                Check(mixer.KeepPlayingPulse(88, Cue::Pathfinder, seconds), "aim voice failed");
+                mixer.Update(88, {88, -1, 0, 0}, 0.5f);
+                mixer.Render(static_cast<int>(std::min(size_t(block), period * 3 - output.pcm.size())), 1, &output, Capture);
+            }
+            return output.pcm;
+        };
+        const auto a = render(192), b = render(113);
+        Check(a == b, "aim interval depends on audio block size");
+        for (size_t i = 0; i + period < a.size(); ++i) Check(a[i] == a[i + period], "aim pulse interval is wrong");
+    }
+    mixer.StopAll();
+    Check(!mixer.KeepPlayingPulse(88, Cue::Pathfinder, NAN), "invalid aim interval accepted");
+    for (uint64_t i = 1; i <= CueMixer::MaxVoices; ++i) Check(mixer.Play(i, Cue::Door), "ordinary pool lost capacity");
+    Check(!mixer.KeepPlayingPulse(999, Cue::Pathfinder, 0.16f), "aim pulse displaced an ordinary cue");
+    Check(mixer.KeepPlayingInterval(999, Cue::Pathfinder, 0.16f), "aim pulse consumed reserved navigation voice");
+    mixer.StopAll();
+}
+
 int main(int argc, char** argv) {
     try {
         Check(argc == 2, "Supply bundled cue directory");
@@ -138,6 +162,15 @@ int main(int argc, char** argv) {
         Check(mixer.Play(999, Cue::Transition), "released voice was not reusable");
         mixer.StopAll();
         Check(mixer.ActiveVoices() == 0, "scene cleanup retained cue voices");
+        Check(mixer.Play(1, Cue::Item) && mixer.Play(2, Cue::Door), "preview setup failed");
+        mixer.Update(2, {2, -1, 0, 0}, 0.5f);
+        mixer.StopAllExcept(2);
+        Output preview;
+        mixer.Render(192, 1, &preview, Capture);
+        Check(mixer.ActiveVoices() == 1 && preview.calls == 1 &&
+              std::any_of(preview.pcm.begin(), preview.pcm.end(), [](float sample) { return std::abs(sample) > 0.0001f; }),
+              "menu cleanup removed the preview or retained a gameplay cue");
+        mixer.StopAll();
         for (size_t cue = 0; cue < CueNames.size(); ++cue) {
             Check(mixer.Play(1, static_cast<Cue>(cue)), "bundled recording did not start");
             mixer.Update(1, {1, -1, 0, 0}, 1);
@@ -166,6 +199,7 @@ int main(int argc, char** argv) {
         Check(mixer.ActiveVoices() == 0, "wall loop survived scene cleanup");
         CheckLoops(mixer, argv[1]);
         CheckNavigationLoop(mixer);
+        CheckAimPulse(mixer);
         Check(mixer.KeepPlaying(8, Cue::Person), "person loop did not resume");
         mixer.Update(8, {8, -1, 0, 0}, 1);
         Output active;

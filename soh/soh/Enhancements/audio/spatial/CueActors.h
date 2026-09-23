@@ -17,6 +17,8 @@ void InitCues();
 void UpdateCues(PlayState* play);
 void ShutdownCues();
 void SetSceneExits(const int16_t* exits, size_t count);
+void PreviewCue(Cue cue, int volume);
+void StopCuePreview();
 CueMixer& GetCueMixer();
 float CueMasterGain();
 }

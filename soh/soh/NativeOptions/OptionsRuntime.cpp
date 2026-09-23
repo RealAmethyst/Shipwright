@@ -27,8 +27,18 @@ static uint32_t nextRepeat = 0;
 static bool awaitRelease = false;
 static bool suppressGameInput = false;
 static bool keyboardConfirmHeld = false;
+static bool previewXWasDown = false;
 static std::deque<std::function<void()>> keyboardInput;
 static std::string requestedPage;
+
+static bool PreviewXDown() {
+    const auto devices = Ship::Context::GetInstance()->GetControlDeck()->GetConnectedPhysicalDeviceManager();
+    for (const auto& [instance, name] : devices->GetConnectedSDLGamepadNames()) {
+        auto gamepad = SDL_GameControllerFromInstanceID(instance);
+        if (gamepad && SDL_GameControllerGetButton(gamepad, SDL_CONTROLLER_BUTTON_X)) return true;
+    }
+    return false;
+}
 
 void RequestPage(std::string name) {
     requestedPage = std::move(name);
@@ -218,6 +228,9 @@ extern "C" int NativeOptions_Update(GameState* gameState) {
     using namespace NativeOptions;
     if (!initialized)
         return false;
+    const bool previewXDown = PreviewXDown();
+    const bool previewXPressed = previewXDown && !previewXWasDown;
+    previewXWasDown = previewXDown;
     JoinRandoGenerationThread();
     UpdateControllerPreview();
     auto menu = SohGui::GetSohMenu();
@@ -271,27 +284,37 @@ extern "C" int NativeOptions_Update(GameState* gameState) {
             awaitRelease = true;
         else if (awaitRelease && Neutral(input))
             awaitRelease = false;
-        int direction = 0;
-        if (awaitRelease) direction = 0;
-        else if ((input.cur.button & BTN_DUP) || input.cur.stick_y > 40) direction = -1;
-        else if ((input.cur.button & BTN_DDOWN) || input.cur.stick_y < -40) direction = 1;
-        else if ((input.cur.button & BTN_DLEFT) || input.cur.stick_x < -40) direction = -2;
-        else if ((input.cur.button & BTN_DRIGHT) || input.cur.stick_x > 40) direction = 2;
-        if (direction && (direction != lastDirection || static_cast<int32_t>(SDL_GetTicks() - nextRepeat) >= 0)) {
-            model.Navigate(direction == -1 ? Navigation::Up : direction == 1 ? Navigation::Down :
-                           direction == -2 ? Navigation::Left : Navigation::Right);
-            nextRepeat = SDL_GetTicks() + (direction != lastDirection ? 350 : 120);
-        }
-        lastDirection = direction;
-        if (!awaitRelease && (input.press.button & BTN_B))
-            model.Navigate(Navigation::Back);
-        else if (!awaitRelease && (input.press.button & BTN_A))
-            model.Navigate(Navigation::Confirm);
-        else if (!awaitRelease && (input.press.button & BTN_R))
-            OpenDetails();
-        if (!awaitRelease && ((input.cur.button & BTN_A) || keyboardConfirmHeld) && !model.Rows().empty()) {
-            const auto row = model.Rows()[model.Selection()];
-            if (row.enabled && row.held) row.held();
+        const auto page = model.CurrentPage();
+        const bool cuePage = page && page->id == std::string("options/") + NativeOptions::Text("accessibility") +
+                                               "/" + NativeOptions::Text("audio");
+        const bool preview = !awaitRelease && previewXPressed && cuePage && !model.Rows().empty() &&
+                             model.Rows()[model.Selection()].preview;
+        if (preview) {
+            model.Rows()[model.Selection()].preview();
+            lastDirection = 0;
+        } else {
+            int direction = 0;
+            if (awaitRelease) direction = 0;
+            else if ((input.cur.button & BTN_DUP) || input.cur.stick_y > 40) direction = -1;
+            else if ((input.cur.button & BTN_DDOWN) || input.cur.stick_y < -40) direction = 1;
+            else if ((input.cur.button & BTN_DLEFT) || input.cur.stick_x < -40) direction = -2;
+            else if ((input.cur.button & BTN_DRIGHT) || input.cur.stick_x > 40) direction = 2;
+            if (direction && (direction != lastDirection || static_cast<int32_t>(SDL_GetTicks() - nextRepeat) >= 0)) {
+                model.Navigate(direction == -1 ? Navigation::Up : direction == 1 ? Navigation::Down :
+                               direction == -2 ? Navigation::Left : Navigation::Right);
+                nextRepeat = SDL_GetTicks() + (direction != lastDirection ? 350 : 120);
+            }
+            lastDirection = direction;
+            if (!awaitRelease && (input.press.button & BTN_B))
+                model.Navigate(Navigation::Back);
+            else if (!awaitRelease && (input.press.button & BTN_A))
+                model.Navigate(Navigation::Confirm);
+            else if (!awaitRelease && (input.press.button & BTN_R))
+                OpenDetails();
+            if (!awaitRelease && ((input.cur.button & BTN_A) || keyboardConfirmHeld) && !model.Rows().empty()) {
+                const auto row = model.Rows()[model.Selection()];
+                if (row.enabled && row.held) row.held();
+            }
         }
     }
     if (!requestedPage.empty() && !ControllerCaptureActive()) {

@@ -11,6 +11,7 @@ struct CueLocation {
     Vec3f position;
     float range;
     PointRule rule;
+    int aimMask = 0;
 };
 // Scene points and ranges from PR 5435, head 257c6c0dfdf9cf9330735b43bc7512e1026d6fae.
 // Exact duplicate points are merged. The separately unassigned sword pedestal is omitted.
@@ -19,7 +20,7 @@ inline constexpr CueLocation CueLocations[] = {
     {SCENE_KOKIRI_FOREST, 0, Cue::Pathfinder, {2146.0f, 1.0f, -142.8f}, 1000, PointRule::Always},
     {SCENE_KOKIRI_FOREST, 2, Cue::Crawlspace, {-788.0f, 120.0f, 1392.0f}, 2000, PointRule::Always},
     {SCENE_DESERT_COLOSSUS, 0, Cue::Pathfinder, {2259.0f, 108.0f, -1550.0f}, 1000, PointRule::Always},
-    {SCENE_LOST_WOODS, 1, Cue::Pathfinder, {1348.0f, 25.0f, -25.0f}, 700, PointRule::Always},
+    {SCENE_LOST_WOODS, 1, Cue::Pathfinder, {1348.0f, 25.0f, -25.0f}, 700, PointRule::Always, 2},
     {SCENE_DEKU_TREE, 7, Cue::Crawlspace, {-1209.0f, -820.0f, 3.5f}, 2000, PointRule::Always},
     {SCENE_DEKU_TREE, 3, Cue::Crawlspace, {-901.0f, -820.0f, 0.5f}, 2000, PointRule::Always},
     {SCENE_DEKU_TREE, 3, Cue::Pathfinder, {-181.76f, -905.0f, -28.3f}, 1000, PointRule::Always},
@@ -79,6 +80,6 @@ inline constexpr CueLocation CueLocations[] = {
     {SCENE_FOREST_TEMPLE, 15, Cue::Pathfinder, {1990.0f, -403.0f, -1850.0f}, 1500, PointRule::Always},
     {SCENE_FIRE_TEMPLE, 10, Cue::Pathfinder, {-2350.0f, 2840.0f, 475.0f}, 1000, PointRule::Always},
     {SCENE_FIRE_TEMPLE, 16, Cue::Pathfinder, {475.0f, 2840.0f, -30.0f}, 1000, PointRule::Always},
-    {SCENE_ICE_CAVERN, 9, Cue::Pathfinder, {860.0f, 200.0f, -2400.0f}, 750, PointRule::Always},
+    {SCENE_ICE_CAVERN, 9, Cue::Pathfinder, {860.0f, 200.0f, -2400.0f}, 750, PointRule::Always, 16},
 };
 }

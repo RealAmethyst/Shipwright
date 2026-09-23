@@ -1,7 +1,7 @@
 # Spatial audio integration
 
 The spatial audio foundation was built, packaged and deployed on 22 September 2026.
-The normal installation now uses pathfinder build `5504dc3ec85d`; current hashes and
+The normal installation now uses NPC name build `efced948a2c9`; current hashes and
 backups are in [the build notes](accessibility-build.md). The Documents extraction-test
 copy remains on `3070a31e1701`, including the fix for
 [debugger initialization during first-time extraction](setup-crash-20260922.md).
@@ -11,6 +11,35 @@ Other cue meanings await assignments in `../../spatial-sound-assignments.md`. Li
 remain in `../../todo.md`; no game has been launched or controlled by Codex for this work.
 Amethyst reports an overall improvement; her slow person-cue feedback is addressed in
 [cue-loop-timing.md](cue-loop-timing.md), with Time Stranger repetition for ordinary recordings.
+
+The cue menu enumerates `CueNames` for each toggle and volume, with a fourteenth control
+for aiming that reuses the pathfinder recording. All controls share the 50 percent default
+and one final reset. `CueActors::UpdateCues` reads the recording CVars
+on audio updates, while `Navigation_PublishAudio` separately reads the pathfinder
+volume; both now use 50 when no saved value exists. The volume row's change callback
+starts the already-loaded WAV through `CueMixer` with a dedicated preview identity.
+`UpdateCues` removes gameplay voices while Options is open but retains that identity,
+including on the title screen where no play state exists. Closing Options stops it.
+The preview uses a centered, non-distance-attenuated source; native Sound Effects and
+Master gains still apply. The cue mixer check verifies that menu cleanup retains only
+the preview voice and that it renders non-silent PCM. Actual listening is pending.
+
+`OptionsRuntime` polls the connected SDL controllers for the physical X button edge.
+The cue switch and volume rows carry a preview callback, and the audio page calls
+`StopCuePreview` on native close. This lets X replay a cue without changing either
+setting and stops the recording when the player backs out of that page. Search page
+closure also stops previews from changes made in search results. The Release build
+and both Native Options checks pass; in-game controller listening is pending.
+
+The aiming cue follows one PR-supported target closest to the player's first-person
+aim line. `AimCue.cpp` uses actor creation/destruction events and reads live target
+state, held item and aim rotation during the existing audio update. Both yaw and pitch
+error set pulse interval; the pathfinder recording is played through a separate ordinary
+voice with its own switch and volume. Native Z-target cycling exits first-person aim.
+The remappable Aim Switch action defaults to Xbox X and keyboard V, and cycles
+eligible targets while aiming. It speaks the selected target's position,
+relative bearing and approximate walking distance. See
+[aiming-research.md](aiming-research.md) for the source trace and current limits.
 
 ## Scope
 

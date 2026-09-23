@@ -29,15 +29,10 @@ uint64_t identity = uint64_t{1} << 61;
 constexpr const char* categories[]{"people", "items", "chests", "doors", "exits", "switches", "signs",
                                   "destructibles", "climbing", "platforms", "landmarks"};
 
-std::string HouseName(int scene) {
-    const int id = HouseSign(scene);
-    if (!id || gSaveContext.language == LANGUAGE_JPN) return "";
+const MessageTableEntry* Message(int id) {
     auto* table = gSaveContext.language == LANGUAGE_FRA ? sFraMessageEntryTablePtr :
                   gSaveContext.language == LANGUAGE_GER ? sGerMessageEntryTablePtr : sNesMessageEntryTablePtr;
-    if (!table) return "";
-    // Mido's sign has a subtitle. Its English line boundary is verified; don't
-    // assume translated line wrapping places that boundary at the same point.
-    if (id == 0x033c && gSaveContext.language != LANGUAGE_ENG) return "";
+    if (!table) return nullptr;
     static std::map<std::pair<MessageTableEntry*, int>, const MessageTableEntry*> captions;
     const auto key = std::pair{table, id};
     if (!captions.contains(key)) {
@@ -47,7 +42,40 @@ std::string HouseName(int scene) {
         }
         captions[key] = match;
     }
-    const auto* entry = captions[key];
+    return captions[key];
+}
+
+std::string NpcName(const Actor* actor) {
+    // These actor IDs identify one character each. The selected English message
+    // has exactly one color-A span containing that character's displayed name.
+    if (gSaveContext.language != LANGUAGE_ENG) return "";
+    int message = 0;
+    switch (actor->id) {
+        case ACTOR_EN_MD: message = 0x033c; break;
+        case ACTOR_EN_SA: message = 0x033f; break;
+        case ACTOR_EN_MA1: case ACTOR_EN_MA2: case ACTOR_EN_MA3: message = 0x2041; break;
+        case ACTOR_EN_TA: message = 0x702c; break;
+        case ACTOR_EN_IN: message = 0x2014; break;
+        case ACTOR_EN_DU: message = 0x301a; break;
+        case ACTOR_EN_NB: message = 0x605f; break;
+        case ACTOR_EN_RU1: case ACTOR_EN_RU2: message = 0x402f; break;
+        case ACTOR_EN_ZL1: case ACTOR_EN_ZL4: message = 0x7060; break;
+        case ACTOR_EN_KZ: message = 0x400a; break;
+        default: return "";
+    }
+    const auto* entry = Message(message);
+    if (!entry || !entry->segment || entry->msgSize > 4096) return "";
+    const auto name = SpeechText::HighlightedName({entry->segment, entry->msgSize});
+    return SpeechSynthesizer::PrepareText(name.c_str());
+}
+
+std::string HouseName(int scene) {
+    const int id = HouseSign(scene);
+    if (!id || gSaveContext.language == LANGUAGE_JPN) return "";
+    // Mido's sign has a subtitle. Its English line boundary is verified; don't
+    // assume translated line wrapping places that boundary at the same point.
+    if (id == 0x033c && gSaveContext.language != LANGUAGE_ENG) return "";
+    const auto* entry = Message(id);
     if (!entry || !entry->segment || entry->msgSize > 4096) return "";
     const auto name = SpeechText::SavedLatinName(gSaveContext.playerName,
                                                 gSaveContext.ship.filenameLanguage == NAME_LANGUAGE_PAL);
@@ -224,7 +252,7 @@ std::vector<Target> CollectTargets(PlayState* play) {
                 case ACTOR_EN_WOOD02: key = source.actor->params >= WOOD_BUSH_GREEN_SMALL ? "bush" : "tree"; break;
                 case ACTOR_EN_GS: target.category = Category::Signs; key = "gossip_stone"; break;
             }
-            target.name = ItemName(source.actor);
+            target.name = target.category == Category::People ? NpcName(source.actor) : ItemName(source.actor);
             target.radius = std::max(45.0f, std::min(150.0f, source.actor->colChkInfo.cylRadius + 30.0f));
             if (source.actor->id == ACTOR_EN_ITEM00) { target.radius = 60; target.loosePickup = true; }
         }
@@ -244,7 +272,7 @@ std::vector<Target> CollectTargets(PlayState* play) {
         Target target{id, actor}; std::string key;
         if (!ExtraKind(actor, target.category, key)) continue;
         target.position = {actor->world.pos.x, actor->world.pos.y, actor->world.pos.z};
-        target.name = ItemName(actor);
+        target.name = target.category == Category::People ? NpcName(actor) : ItemName(actor);
         if (target.name.empty()) target.name = Text(key);
         target.radius = std::max(45.0f, std::min(150.0f, actor->colChkInfo.cylRadius + 30.0f));
         if (!target.name.empty() && Finite(target.position)) result.push_back(std::move(target));

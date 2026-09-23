@@ -106,7 +106,12 @@ static void CheckInstalledSigns(const char* path) {
         {HouseSign(SCENE_LINKS_HOUSE), "Link's House"}, {HouseSign(SCENE_MIDOS_HOUSE), "House of the Great Mido"},
         {HouseSign(SCENE_KNOW_IT_ALL_BROS_HOUSE), "House of the Know-it-All Brothers"},
         {HouseSign(SCENE_TWINS_HOUSE), "House of Twins"}, {HouseSign(SCENE_SARIAS_HOUSE), "Saria's House"}};
+    const std::map<int, std::string> names{
+        {0x033c, "Mido"}, {0x033f, "Saria"}, {0x2041, "Malon"}, {0x702c, "Talon"},
+        {0x2014, "Ingo"}, {0x301a, "Darunia"}, {0x605f, "Nabooru"}, {0x402f, "Ruto"},
+        {0x7060, "Zelda"}, {0x400a, "King Zora"}};
     size_t found = 0;
+    size_t foundNames = 0;
     for (uint32_t i = 0; i < count; ++i) {
         const auto id = read(2); read(1); read(1);
         const auto length = read(4);
@@ -117,10 +122,17 @@ static void CheckInstalledSigns(const char* path) {
                   "house label disagrees with actual installed sign caption");
             ++found;
         }
+        if (names.contains(id)) {
+            const std::string_view raw(reinterpret_cast<const char*>(bytes.data() + offset), length);
+            Check(SpeechText::HighlightedName(raw) == names.at(id),
+                  "NPC name disagrees with actual installed game message");
+            ++foundNames;
+        }
         offset += length;
     }
     Check(found == expected.size(), "missing or duplicated installed house sign");
-    std::cout << "Five installed native house captions verified\n";
+    Check(foundNames == names.size(), "missing or duplicated installed NPC name message");
+    std::cout << "Five native house captions and ten NPC names verified in installed game text\n";
 }
 
 int main(int argc, char** argv) {
@@ -349,6 +361,11 @@ int main(int argc, char** argv) {
         Check(SpeechText::SignCaption("House\x01" "Subtitle\x09\x02", "", true, glyph) == "House", "subtitle entered house name");
         Check(SpeechText::SignCaption("Bad\x05", "", false, glyph).empty() &&
               SpeechText::SignCaption("Bad\x1e\x00\x02", "", false, glyph).empty(), "invalid raw caption did not fail closed");
+        Check(SpeechText::HighlightedName("House of the Great \x05" "AMido\x05@\x02") == "Mido" &&
+              SpeechText::HighlightedName("My name is \x05" "AMalon\x05@!\x02") == "Malon" &&
+              SpeechText::HighlightedName("\x05" "AMido\x05@ and \x05" "ASaria\x05@\x02").empty() &&
+              SpeechText::HighlightedName("\x05" "AMido\x01\x05@\x02").empty(),
+              "NPC name parser accepted ambiguous or uncontrolled text");
         // Only this test's explicit collider setup may change the player.
         Player after = player; after.cylinder = untouched.cylinder;
         Check(std::memcmp(&untouched, &after, sizeof(player)) == 0, "route queries changed Link's state");

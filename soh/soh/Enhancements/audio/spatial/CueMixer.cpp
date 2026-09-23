@@ -82,6 +82,16 @@ bool CueMixer::KeepPlayingInterval(uint64_t identity, Cue cue, float seconds) {
     return true;
 }
 
+bool CueMixer::KeepPlayingPulse(uint64_t identity, Cue cue, float seconds) {
+    if (!std::isfinite(seconds) || seconds <= 0 || seconds > 60) { Stop(identity); return false; }
+    if (!KeepPlaying(identity, cue)) return false;
+    for (auto& voice : voices) if (voice.identity == identity) {
+        voice.interval = std::max(size_t{1}, static_cast<size_t>(seconds * 32000));
+        return true;
+    }
+    return false;
+}
+
 void CueMixer::Update(uint64_t identity, SpatialAudioSource source, float gain) {
     if (!source.identity || !std::isfinite(gain) || gain <= 0) { Stop(identity); return; }
     for (auto& voice : voices) if (voice.identity == identity) {
@@ -94,6 +104,9 @@ void CueMixer::Stop(uint64_t identity) {
     for (auto& voice : voices) if (voice.identity == identity) voice = {};
 }
 void CueMixer::StopAll() { voices.fill({}); }
+void CueMixer::StopAllExcept(uint64_t identity) {
+    for (auto& voice : voices) if (voice.identity != identity) voice = {};
+}
 size_t CueMixer::ActiveVoices() const {
     return std::count_if(voices.begin(), voices.end(), [](const Voice& voice) { return voice.identity != 0; });
 }

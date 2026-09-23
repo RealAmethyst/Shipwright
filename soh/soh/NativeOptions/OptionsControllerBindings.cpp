@@ -99,6 +99,7 @@ PagePtr ButtonsPage(uint8_t port, int group, CaptureRequest capture) {
             }
             buttons.insert(buttons.end(), {{BTN_Z, "bind_z"}, {BTN_CUP, "bind_c_up"}, {BTN_CDOWN, "bind_c_down"},
                                           {BTN_CLEFT, "bind_c_left"}, {BTN_CRIGHT, "bind_c_right"}});
+            if (port == 0) buttons.push_back({BTN_AIM_CYCLE, "bind_aim_cycle"});
         }
         std::vector<Row> rows;
         for (const auto& [mask, key] : buttons) rows.push_back(ButtonBinding(port, mask, Text(key), capture));

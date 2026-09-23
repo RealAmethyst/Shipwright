@@ -1,4 +1,5 @@
 #include "OTRGlobals.h"
+#include <libultraship/controller/controldevice/controller/mapping/ControllerDefaultMappings.h>
 #include "NativeOptions/NativeOptions.h"
 #include "OTRAudio.h"
 #include <algorithm>
@@ -286,6 +287,16 @@ OTRGlobals::OTRGlobals() {
     context->InitConfiguration();
     context->InitConsoleVariables();
 
+    LUS::ControllerDefaultMappings originalMappings;
+    auto keyboardDefaults = originalMappings.GetDefaultKeyboardKeyToButtonMappings();
+    auto gamepadDefaults = originalMappings.GetDefaultSDLButtonToButtonMappings();
+    keyboardDefaults[BTN_AIM_CYCLE] = {Ship::KbScancode::LUS_KB_V};
+    gamepadDefaults[BTN_AIM_CYCLE] = {SDL_CONTROLLER_BUTTON_X};
+    auto defaultMappings = std::make_shared<LUS::ControllerDefaultMappings>(
+        keyboardDefaults, originalMappings.GetDefaultKeyboardKeyToAxisDirectionMappings(),
+        gamepadDefaults, originalMappings.GetDefaultSDLButtonToAxisDirectionMappings(),
+        originalMappings.GetDefaultSDLAxisDirectionToButtonMappings(),
+        originalMappings.GetDefaultSDLAxisDirectionToAxisDirectionMappings());
     auto controlDeck = std::make_shared<LUS::ControlDeck>(std::vector<CONTROLLERBUTTONS_T>({
         BTN_CUSTOM_MODIFIER1,
         BTN_CUSTOM_MODIFIER2,
@@ -297,8 +308,24 @@ OTRGlobals::OTRGlobals() {
         BTN_CUSTOM_OCARINA_DISABLE_SONGS,
         BTN_CUSTOM_OCARINA_PITCH_UP,
         BTN_CUSTOM_OCARINA_PITCH_DOWN,
+        BTN_AIM_CYCLE,
+    }), defaultMappings, std::unordered_map<CONTROLLERBUTTONS_T, std::string>({
+        {BTN_A, "A"}, {BTN_B, "B"}, {BTN_L, "L"}, {BTN_R, "R"}, {BTN_Z, "Z"},
+        {BTN_START, "Start"}, {BTN_CLEFT, "CLeft"}, {BTN_CRIGHT, "CRight"},
+        {BTN_CUP, "CUp"}, {BTN_CDOWN, "CDown"}, {BTN_DLEFT, "DLeft"},
+        {BTN_DRIGHT, "DRight"}, {BTN_DUP, "DUp"}, {BTN_DDOWN, "DDown"},
+        {BTN_AIM_CYCLE, "AimCycle"},
     }));
     context->InitControlDeck(controlDeck);
+    if (!CVarGetInteger(CVAR_SETTING("A11yAimCycleBindingInitialized"), 0)) {
+        auto button = controlDeck->GetControllerByPort(0)->GetButton(BTN_AIM_CYCLE);
+        if (button->GetAllButtonMappings().empty()) {
+            button->AddDefaultMappings(Ship::PhysicalDeviceType::Keyboard);
+            button->AddDefaultMappings(Ship::PhysicalDeviceType::SDLGamepad);
+        }
+        CVarSetInteger(CVAR_SETTING("A11yAimCycleBindingInitialized"), 1);
+        CVarSave();
+    }
     context->InitResourceManager({ portArchivePath }, {}, 3, true);
     context->InitConsole();
     // Extraction draws GUI frames before Initialize; their debugger callbacks need this service.

@@ -30,6 +30,7 @@ struct Row {
     std::function<void()> activate;
     std::function<void(int)> adjust;
     std::function<void()> held;
+    std::function<void()> preview;
     RowImage image;
 };
 

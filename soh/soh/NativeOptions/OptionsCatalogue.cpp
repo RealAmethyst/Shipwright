@@ -4,7 +4,7 @@
 #include "soh/SohGui/SohMenu.h"
 #include "soh/SaveManager.h"
 #include "soh/Enhancements/game-interactor/GameInteractor_Hooks.h"
-#include "soh/Enhancements/audio/spatial/CueMixer.h"
+#include "soh/Enhancements/audio/spatial/CueActors.h"
 
 extern "C" {
 #include "global.h"
@@ -19,6 +19,8 @@ struct Group {
     std::vector<std::shared_ptr<Group>> children;
     std::vector<std::pair<std::string, WidgetInfo*>> widgets;
     RowsProvider nativeRows;
+    std::function<void()> onClose;
+    std::string hints;
     std::vector<SearchWidget*> searchWidgets;
 };
 
@@ -56,7 +58,7 @@ std::string Category(const std::string& menu, const std::string& sidebar, const 
 }
 
 PagePtr GroupPage(const std::shared_ptr<Group>& group) {
-    return MakePage(group->id, group->name, [group] {
+    auto page = MakePage(group->id, group->name, [group] {
         std::vector<Row> rows = group->nativeRows ? group->nativeRows() : std::vector<Row>{};
         for (const auto& child : group->children)
             rows.push_back(Link(child->id, child->name, [child] { return GroupPage(child); }));
@@ -64,6 +66,9 @@ PagePtr GroupPage(const std::shared_ptr<Group>& group) {
             AppendWidget(rows, *widget, id);
         return rows;
     });
+    page->onClose = group->onClose;
+    if (!group->hints.empty()) page->hints += " " + group->hints;
+    return page;
 }
 
 std::string SearchKey(const std::string& text) {
@@ -104,7 +109,7 @@ void SearchGroup(const std::shared_ptr<Group>& group, const std::string& query,
 
 PagePtr SearchPage(const std::shared_ptr<Group>& catalogue) {
     auto query = std::make_shared<std::string>();
-    return MakePage("search", Text("search"), [query, catalogue] {
+    auto page = MakePage("search", Text("search"), [query, catalogue] {
         std::vector<Row> rows{String("query", Text("search_query"), *query,
             [query](std::string value) { *query = std::move(value); }, Text("search_help"), 128)};
         const auto key = SearchKey(*query);
@@ -114,6 +119,8 @@ PagePtr SearchPage(const std::shared_ptr<Group>& catalogue) {
             rows.push_back(Action("empty", Text("no_results"), [] {}));
         return rows;
     });
+    page->onClose = SpatialAudio::StopCuePreview;
+    return page;
 }
 } // namespace
 
@@ -156,25 +163,54 @@ PagePtr BuildRoot(const std::string& requestedCategory) {
             }, Text("tts_reset_help"))};
     };
 #endif
-    Child(categories.at("accessibility"), Text("audio"))->nativeRows = [] {
+    auto cueGroup = Child(categories.at("accessibility"), Text("audio"));
+    cueGroup->onClose = SpatialAudio::StopCuePreview;
+    cueGroup->hints = Text("cue_preview_hint");
+    cueGroup->nativeRows = [] {
         std::vector<Row> rows;
-        for (const char* cue : SpatialAudio::CueNames) {
+        for (size_t i = 0; i < SpatialAudio::CueNames.size(); ++i) {
+            const char* cue = SpatialAudio::CueNames[i];
             const std::string key = std::string("cue_") + cue;
             const std::string cvar = std::string(CVAR_SETTING("A11yAudio.")) + cue;
-            rows.push_back(CVarToggle(Text(key), cvar + ".Enabled", true, Text(key + "_help")));
-            rows.push_back(CVarInteger(Text(key + "_volume"), cvar + ".Volume", 10, 0, 100, 1, Text("cue_volume_help")));
-            auto reset = Text("cue_reset");
-            const auto placeholder = reset.find("$0");
-            if (placeholder == std::string::npos) continue;
-            reset.replace(placeholder, 2, Text(key));
-            rows.push_back(Action(cvar + ".Reset", reset, [cvar] {
+            auto preview = [cvar, i] {
+                SpatialAudio::PreviewCue(static_cast<SpatialAudio::Cue>(i),
+                                         CVarGetInteger((cvar + ".Volume").c_str(), 50));
+            };
+            auto toggle = CVarToggle(Text(key), cvar + ".Enabled", true, Text(key + "_help"));
+            toggle.preview = preview;
+            rows.push_back(std::move(toggle));
+            auto volume = CVarInteger(Text(key + "_volume"), cvar + ".Volume", 50, 0, 100, 1,
+                                      Text("cue_volume_help"), preview);
+            volume.preview = preview;
+            rows.push_back(std::move(volume));
+        }
+        const std::string aimCvar = CVAR_SETTING("A11yAudio.aim");
+        auto previewAim = [] {
+            SpatialAudio::PreviewCue(SpatialAudio::Cue::Pathfinder,
+                                     CVarGetInteger(CVAR_SETTING("A11yAudio.aim.Volume"), 50));
+        };
+        auto aimToggle = CVarToggle(Text("cue_aim"), aimCvar + ".Enabled", true, Text("cue_aim_help"));
+        aimToggle.preview = previewAim;
+        rows.push_back(std::move(aimToggle));
+        auto aimVolume = CVarInteger(Text("cue_aim_volume"), aimCvar + ".Volume", 50, 0, 100, 1,
+                                     Text("cue_volume_help"), previewAim);
+        aimVolume.preview = previewAim;
+        rows.push_back(std::move(aimVolume));
+        rows.push_back(Action("cue/reset_all", Text("cue_reset_all"), [] {
+            for (const char* cue : SpatialAudio::CueNames) {
+                const std::string cvar = std::string(CVAR_SETTING("A11yAudio.")) + cue;
                 for (const char* suffix : {".Enabled", ".Volume"}) {
                     const auto setting = cvar + suffix;
                     CVarClear(setting.c_str());
                     ChangedCVar(setting);
                 }
-            }, Text("cue_reset_help")));
-        }
+            }
+            for (const char* suffix : {".Enabled", ".Volume"}) {
+                const auto setting = std::string(CVAR_SETTING("A11yAudio.aim")) + suffix;
+                CVarClear(setting.c_str());
+                ChangedCVar(setting);
+            }
+        }, Text("cue_reset_all_help")));
         return rows;
     };
     categories.at("audio")->nativeRows = [] {

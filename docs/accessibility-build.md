@@ -11,7 +11,135 @@
 
 GitHub verified RealAmethyst/Shipwright as a fork of HarbourMasters/Shipwright on 21 September 2026. Origin points to the fork and upstream to HarbourMasters. Accessibility development uses the `accessibility` branch. The changes restore native desktop setup dialogs and integrate Prism speech for extraction, boot logos and the existing game TTS, including menu positions and announcement ordering. Wider gameplay accessibility remains future work.
 
-## Current pathfinder speed build
+## Current NPC name build
+
+Built and deployed on 24 September 2026 as `efced948a2c9`. Navigation now
+names ten uniquely identified NPCs, including Mido in Kokiri Forest, from
+highlighted spans in the game's own English message table. Unknown people and
+unverified language variants retain the generic Person label. Source IDs,
+message IDs and fail-closed extraction are recorded in [pathfinder.md](pathfinder.md).
+The prior aim switch, sound previews and 50 percent defaults remain included.
+
+- Executable SHA-256: `efced948a2c9fe5d5b78cd613a8cc813c10750ea6c76e084a85d34ba007692f8`.
+- Port archive SHA-256: `4fd697927cad8fecbe4306291c7eb53d68c44454c95a2b6d053b06d001f4133b` (unchanged).
+- ZIP: `_packages/Ship-9.2.3-npc-names-prism-win64-ship.zip` (102,285,544 bytes).
+- ZIP SHA-256: `212fa08249af1bd1b4b08e26e83439113ae6eb6ca73a6cac876351d4edb6b30a`.
+
+Release build, all 16 navigation tests, resource-key checks and a direct check
+of ten names in the installed game message resource passed. All 7,961 package
+entries and 1,281 port archive entries passed CRC checks; packaged and
+installed executable/archive hashes match. The preceding installation,
+checklist and release guide are preserved in
+`../../backups/9.2.3-before-npc-names-20260924`. No game was launched or
+controlled. Restart the game to load this build; manual checks are in
+`../../todo.md`.
+
+## Previous aiming and target-switch build
+
+Built and deployed on 23 September 2026 as `39252ed56941`. Amethyst approved
+Xbox X as the initial aim-target cycle input, with an ordinary remappable action
+under Controls, Configure Controller, Link (P1), Buttons. `BTN_AIM_CYCLE` uses
+the unused 32-bit controller mask `0x01000000`; CMake defines
+`CONTROLLERBUTTONS_T=uint32_t` for this port. The control deck supplies Xbox X
+and keyboard V defaults. A one-time setting adds those defaults to an existing
+P1 configuration without replacing its other mappings, and subsequent edits
+use the existing binding capture, persistence and reset machinery. The game
+input's first press path truncates custom bits to 16 bits in `PadMgr_Update`,
+so `AimCue` reads the current 32-bit button state and requires release between
+cycles.
+
+Candidates are sorted by their live horizontal bearing, then distance and
+identity. Pressing the action advances to the next candidate and holds it until
+it disappears or first-person aiming ends. Speech announces its list position,
+relative left/right/ahead bearing and approximate walking steps, using
+central navigation text and the verified walking-stride estimator. When no
+targets qualify, the action says so. Existing automatic nearest-aim selection
+remains active before a deliberate switch.
+
+- Executable SHA-256: `39252ed569415db48fee94157af9605bcc691c5cf304ddbaa8a9847d697c5290`.
+- Port archive SHA-256: `4fd697927cad8fecbe4306291c7eb53d68c44454c95a2b6d053b06d001f4133b`.
+- ZIP: `_packages/Ship-9.2.3-aim-switch-prism-win64-ship.zip` (102,186,756 bytes).
+- ZIP SHA-256: `a4f21575e0591716a2311cfef6ea7082c7475b508f2d7e9cbc7ed28b0eca7484`.
+
+Release build, all four spatial audio checks and both Native Options checks
+passed. All 7,961 package entries and 1,281 port archive entries passed CRC
+checks; packaged and installed executable/archive hashes match. Previous
+installed files and the local handoff documents are backed up in
+`../../backups/9.2.3-before-aim-switch-20260923`. No game was launched or
+controlled. Restart the game to load this build and use `../../todo.md` for
+manual checks.
+
+## Previous aiming build
+
+Built and deployed on 23 September 2026 as `37eb6c383d05`. The new aiming cue
+reuses the pathfinder recording, with a separate On/Off switch and volume in
+Accessibility, Audio. Both default to On and 50 percent; the final Reset all
+accessibility sounds row now resets fourteen controls. The cue plays from one
+PR-supported target nearest the first-person aim line and repeats every 0.16 to
+1.5 seconds according to combined horizontal and vertical aim error. Actor
+lifetime comes from game events; live actor state controls eligibility. Native
+Z-target lock-on exits first-person aiming in this game. The separate cycle
+control was added in the current build above.
+
+- Executable SHA-256: `37eb6c383d05abaf329a1bf2966c178ae6475667cafc3dfb2d3f6bf5012c4f9b`.
+- Port archive SHA-256: `7bdc3dc19a38799429df980d50432a8c35c00ca9329c78dd368d1bbe53511348`.
+- ZIP: `_packages/Ship-9.2.3-aim-cue-prism-win64-ship.zip` (102,135,299 bytes).
+- ZIP SHA-256: `144a4920445418447a9d2e54c554b87b7c97ece98157df547a0ddee164cb61f8`.
+
+Release build, all four spatial audio checks and both Native Options checks passed.
+All 7,961 package entries and 1,281 port archive entries passed CRC checks;
+packaged and installed executable/archive hashes match. The previous installed
+build, checklist and release guide are preserved in
+`../../backups/9.2.3-before-aim-20260923`. No game was launched or controlled.
+Restart the game to load this build; manual checks are in `../../todo.md`.
+
+## Previous cue button build
+
+Built and deployed on 23 September 2026 as `d7fa0c1bfb45`. A physical Xbox X
+press on an Accessibility, Audio cue switch or volume row now replays that loaded
+recording at its current saved volume. `OptionsRuntime` reads SDL's X button directly;
+the native N64 controller mapping does not bind it by default. The cue page's native
+close callback stops the preview on Back or closing Options. Search closes also stop
+any volume-change preview started from search results. No game was launched or controlled.
+
+- Executable SHA-256: `d7fa0c1bfb454b62393b635e49f1e9b025fe5fb5e128b7a07b89b4cf5bb485a2`.
+- Port archive SHA-256: `a3cc735afae5f8b785dca815bddb807df249a01bd1e33ab2c1f43f48851dadbd`.
+- ZIP: `_packages/Ship-9.2.3-cue-button-prism-win64-ship.zip` (101,977,155 bytes).
+- ZIP SHA-256: `454f632664069c61ef950927f5c996335378117c834e92b672fcc19b9afc9b02`.
+
+Release build and both Native Options checks passed. All 7,961 package entries and
+the port archive passed CRC checks; packaged and installed executable/archive hashes
+match. The preceding executable, archive, checklist and release guide are preserved
+in `../../backups/9.2.3-before-cue-button-20260923`. Restart the game to load this
+build. The manual sound checks are in `../../todo.md`.
+
+## Previous cue volume build
+
+Built and deployed on 23 September 2026 as `d11139ba2502` at
+`H:/projects/ocarina/game/soh.exe`. Each Accessibility, Audio volume change now plays
+its loaded recording once at the selected level, independent of that cue's On/Off
+switch. Volume zero stops the preview. Options suppresses gameplay cue voices while
+preserving the preview voice; leaving Options stops the preview. All thirteen cues
+now default to On at 50 percent, and one final Reset all accessibility sounds row
+clears their individual On/Off and volume CVars. Existing saved values remain as set.
+The Documents extraction-test copy remains on `3070a31e1701`.
+
+- Executable SHA-256: `d11139ba2502909a866c5f52f0d575be6e11e9dd4d248b25e05c8fa7979731ce`.
+- Port archive SHA-256: `f30b7dc39b99d6678403dada262ac3d95de07034defe95a853fc9798755abd54`.
+- ZIP: `_packages/Ship-9.2.3-cue-preview-prism-win64-ship.zip` (102,109,012 bytes).
+- ZIP SHA-256: `df976ade56fa1104f105474b9447bcc5cbac2de9f8d29d792e1f0b3227dddcc8`.
+
+Release build, cue mixer check and both Native Options checks passed. The ZIP's
+7,961 entries and the port archive passed CRC verification. The packaged executable
+and archive match the installed hashes; the new text resource is in the archive.
+No ROM, extracted game archive, save or personal configuration was packaged.
+The previous installed executable, port archive and checklist are preserved in
+`../../backups/9.2.3-before-cue-preview-20260923`. No game was launched or controlled.
+Restart the game to load this build; no extraction, settings reset or Windows restart
+is needed. Preview listening and controller behavior still need Amethyst's test in
+`../../todo.md`.
+
+## Previous pathfinder speed build
 
 Built and deployed on 23 September 2026 as `5504dc3ec85d`, at
 `H:/projects/ocarina/game/soh.exe`. Native collision topology, lazy candidate validation

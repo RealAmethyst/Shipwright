@@ -4,7 +4,7 @@ Thirteen recordings are implemented: item, person, door, transition, destructibl
 
 PR 5435 references 110 original game sound IDs in its cue logic. It declares 103 policies and registers 161 real actor kinds plus 7 virtual kinds. These are different counts; several meanings can share one replacement recording.
 
-The current port covers 73 real actor kinds, collision-polygon exits and climbable surfaces, 65 distinct fixed or conditional crawlspace/route locations, and the three wall probes. Unassigned terrain, aiming, puzzle, combat and other policies remain pending.
+The current port covers 73 ordinary-cue actor kinds, twenty aim-target actor kinds, collision-polygon exits and climbable surfaces, 65 distinct fixed or conditional crawlspace/route locations, two fixed aim points, and the three wall probes. Unassigned terrain, other puzzle, combat and other policies remain pending. The aiming control reuses the pathfinder recording; it does not add a fourteenth WAV.
 
 ## Assigned recordings
 
@@ -21,7 +21,8 @@ for each recording's duration and the preserved special-item pulse behavior.
 - Ladder: native climbable collision surfaces and the Slingshot Room ladder. Water-level positioning follows the PR.
 - Elevator: Jabu-Jabu's lift and the Forest Temple elevator, with the PR's proximity/state rules. Other moving platforms have a separate unanswered assignment.
 - Pathfinder: the PR's placed route markers, including moving Forest Temple basement points and conditional twisted-hallway markers. The separately unassigned sword pedestal and hookshot-surface signals stay silent.
-- Wall north/east/south/west: blocking walls found by the three Link-relative floor-following probes. The recording identifies the wall's map direction relative to Link, while audible position follows the camera. Full recordings repeat while detected. Each has its own switch, volume and reset. The 20 outdoor maps and ten mapped dungeons are supported; first-person aiming suppresses these wall tones.
+- Aiming: the pathfinder recording from one supported first-person target, repeating faster as both horizontal and vertical aim improve. It has its own On/Off and volume controls, with the shared final reset. [Target source findings](aiming-research.md) list the PR masks and current native state checks. Manual cycling remains a design decision.
+- Wall north/east/south/west: blocking walls found by the three Link-relative floor-following probes. The recording identifies the wall's map direction relative to Link, while audible position follows the camera. Full recordings repeat while detected. Each has its own switch and volume and uses the shared final reset. The 20 outdoor maps and ten mapped dungeons are supported; first-person aiming suppresses these wall tones.
 
 ## Available recordings still needing an assignment
 
@@ -59,7 +60,6 @@ There are 88 blank lines and 1 tentative answer in [your assignment file](../../
 - Master Sword pedestal.
 - Bomb flowers.
 - Non-interactable Kokiri Forest rocks.
-- Lake Hylia scene objects that provide aiming cues.
 - Chest alignment: standing at the usable front of the chest.
 - Chest alignment: standing behind the chest; this is separate from the removed camera-behind pitch effect.
 - Ordinary floor switches.
@@ -135,7 +135,7 @@ The source is [PR 5435](https://github.com/HarbourMasters/Shipwright/pull/5435),
 
 - The PR's separate miniaudio engine, extraction flow, glossary speech and automatic dog-following state change are not imported.
 - Camera direction and Link distance follow Amethyst's answers. No artificial behind-camera pitch change is used.
-- Original recording-specific base pitch/volume tuning is not imposed on the replacement recordings. Their default is the approved 10 percent.
+- Original recording-specific base pitch/volume tuning is not imposed on the replacement recordings. Their current default is 50 percent, as requested on 23 September 2026; saved custom levels are preserved.
 - The PR gates most cues on isDrawn. Native Actor_DrawAll sets that flag after frustum culling, so it cannot establish that a source behind the camera does not exist. The port checks native initialization, draw/update availability, room and relevant item states instead.
 - The two Deku Baba actor types have different structures and drop functions. The port checks their own typed action functions.
 - The PR's VA_DOOR callback dereferences its null native actor. It does not create any VA_DOOR instances in its current list; that unsafe callback is not carried into this port.

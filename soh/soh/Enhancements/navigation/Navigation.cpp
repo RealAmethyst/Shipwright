@@ -422,7 +422,7 @@ extern "C" void Navigation_PublishAudio(PlayState* play) {
     using namespace Navigation;
     auto& mixer = SpatialAudio::GetCueMixer();
     const float gain = CVarGetInteger(CVAR_SETTING("A11yAudio.pathfinder.Enabled"), 1) ?
-        std::clamp(CVarGetInteger(CVAR_SETTING("A11yAudio.pathfinder.Volume"), 10), 0, 100) / 100.0f : 0;
+        std::clamp(CVarGetInteger(CVAR_SETTING("A11yAudio.pathfinder.Volume"), 50), 0, 100) / 100.0f : 0;
     if (!audioActive || !Available(play) || Navigation_IsOpen() || gain <= 0) { mixer.Stop(Voice); return; }
     const auto source = SpatialAudio_WorldSource(Voice, soundPosition.x, soundPosition.y, soundPosition.z);
     if (!source.identity || !mixer.KeepPlayingInterval(Voice, SpatialAudio::Cue::Pathfinder, soundInterval)) {

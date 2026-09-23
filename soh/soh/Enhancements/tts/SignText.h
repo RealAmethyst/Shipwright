@@ -47,4 +47,29 @@ inline std::string SignCaption(std::string_view raw, const std::string& name, bo
     }
     return "";
 }
+
+// Some native messages highlight a character's name as their only color-A span.
+// Reject any other control or a second candidate rather than name the wrong NPC.
+inline std::string HighlightedName(std::string_view raw) {
+    if (raw.size() > 4096) return "";
+    std::string result;
+    for (size_t i = 0; i + 1 < raw.size(); ++i) {
+        if (static_cast<uint8_t>(raw[i]) != 0x05 || raw[i + 1] != 'A') continue;
+        if (!result.empty()) return "";
+        i += 2;
+        for (; i < raw.size(); ++i) {
+            const auto c = static_cast<uint8_t>(raw[i]);
+            if (c == 0x05 && i + 1 < raw.size() && raw[i + 1] == '@') { ++i; break; }
+            if (result.size() >= 32 || !((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+                                         c == ' ' || c == '-' || c == '\'')) return "";
+            result += static_cast<char>(c);
+        }
+        if (i >= raw.size()) return "";
+        const auto first = result.find_first_not_of(' ');
+        const auto last = result.find_last_not_of(' ');
+        if (first == std::string::npos) return "";
+        result = result.substr(first, last - first + 1);
+    }
+    return result;
+}
 }

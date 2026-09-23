@@ -25,9 +25,11 @@ class CueMixer {
     bool KeepPlaying(uint64_t identity, Cue cue);
     // Selected guidance has one reserved voice in addition to the ordinary pool.
     bool KeepPlayingInterval(uint64_t identity, Cue cue, float seconds);
+    bool KeepPlayingPulse(uint64_t identity, Cue cue, float seconds);
     void Update(uint64_t identity, SpatialAudioSource source, float gain);
     void Stop(uint64_t identity);
     void StopAll();
+    void StopAllExcept(uint64_t identity);
     void Render(int frames, float gameGain, void* context, RenderCallback callback);
     size_t ActiveVoices() const;
 

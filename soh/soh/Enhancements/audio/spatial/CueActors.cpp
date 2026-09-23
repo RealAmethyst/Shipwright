@@ -1,4 +1,5 @@
 #include "CueActors.h"
+#include "AimCue.h"
 #include "CueLocations.h"
 #include "WallProbes.h"
 #include "WorldCompass.h"
@@ -54,6 +55,7 @@ struct Exit {
 struct SurfaceCue { Tracked tracked; Vec3f position; };
 struct LocationCue { Tracked tracked; const CueLocation* location; };
 CueMixer cueMixer;
+constexpr uint64_t PreviewIdentity = uint64_t{1} << 61;
 std::map<int16_t, Policy> policies;
 std::map<Actor*, Tracked> actors;
 std::vector<Exit> exits;
@@ -85,6 +87,7 @@ Tracked NewTracked(Policy policy) {
 
 void ResetScene() {
     cueMixer.StopAll();
+    ResetAimCue();
     actors.clear();
     exits.clear();
     climbs.clear();
@@ -356,6 +359,7 @@ void InitCues() {
         if (found != actors.end()) { cueMixer.Stop(found->second.identity); actors.erase(found); }
     });
     GameInteractor::Instance->RegisterGameHook<GameInteractor::OnPlayDestroy>(ResetScene);
+    InitAimCue(cueMixer);
     running = true;
 }
 
@@ -364,12 +368,19 @@ void UpdateCues(PlayState* play) {
     for (size_t i = 0; i < CueNames.size(); ++i) {
         const std::string prefix = std::string(CVAR_SETTING("A11yAudio.")) + CueNames[i];
         levels[i] = CVarGetInteger((prefix + ".Enabled").c_str(), 1) ?
-            std::clamp(CVarGetInteger((prefix + ".Volume").c_str(), 10), 0, 100) / 100.0f : 0;
+            std::clamp(CVarGetInteger((prefix + ".Volume").c_str(), 50), 0, 100) / 100.0f : 0;
     }
     masterGain = std::clamp(CVarGetInteger(CVAR_SETTING("Volume.Master"), 40), 0, 100) / 100.0f;
-    if (!play || !GameInteractor::IsSaveLoaded() || NativeOptions_IsOpen() || play->pauseCtx.state ||
+    if (NativeOptions_IsOpen()) {
+        cueMixer.StopAllExcept(PreviewIdentity);
+        SuspendAimCue(cueMixer);
+        return;
+    }
+    cueMixer.Stop(PreviewIdentity);
+    if (!play || !GameInteractor::IsSaveLoaded() || play->pauseCtx.state ||
         !GET_PLAYER(play) || (GET_PLAYER(play)->stateFlags1 & PLAYER_STATE1_IN_CUTSCENE)) {
         cueMixer.StopAll();
+        SuspendAimCue(cueMixer);
         return;
     }
     FindGeometryCues(play);
@@ -412,6 +423,7 @@ void UpdateCues(PlayState* play) {
         }
         UpdateSound(tracked, pos, distance, range, 1, pulsed, trigger);
     }
+    UpdateAimCue(play, cueMixer);
     for (auto& climb : climbs) {
         Vec3f position = climb.position;
         const float waterHeight = GET_PLAYER(play)->actor.yDistToWater + origin.y;
@@ -465,6 +477,14 @@ std::vector<CueTarget> NavigationTargets(PlayState* play) {
     return result;
 }
 void SetSceneExits(const int16_t* data, size_t count) { exitList = data; exitCount = count; collision = nullptr; }
+void PreviewCue(Cue cue, int volume) {
+    if (!running || !NativeOptions_IsOpen()) return;
+    cueMixer.Stop(PreviewIdentity);
+    if (volume <= 0 || !cueMixer.Play(PreviewIdentity, cue)) return;
+    cueMixer.Update(PreviewIdentity, {PreviewIdentity, 0, 0, -1},
+                    std::clamp(volume, 0, 100) / 100.0f);
+}
+void StopCuePreview() { cueMixer.Stop(PreviewIdentity); }
 CueMixer& GetCueMixer() { return cueMixer; }
 float CueMasterGain() { return masterGain; }
 }
